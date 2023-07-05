@@ -836,32 +836,35 @@ class Hop extends Bet {
 }
 
 class Simulation {
-    constructor(numOfRuns=5000, maxRolls=200, maxShooters=20, bankroll=200, strategy=passline) {
+    constructor(numOfRuns=5000, maxRolls=200, maxShooters=20, bankroll=200, strategies=[passline]) {
         this.numOfRuns = numOfRuns;
         this.maxRolls = maxRolls;
         this.maxShooters = maxShooters;
         this.bankroll = bankroll;
-        this.strategy = strategy;
+        this.strategies = strategies;
     }
 
     printout() {
         let table = new Table();
-        table.addPlayer(new Player(this.bankroll, this.strategy));
+        this.strategies.forEach(s=>{
+            table.addPlayer(new Player(this.bankroll, s, s.name));
+        })
         table.run(this.maxRolls, this.maxShooters);
     }
 
     run() {
-        let results = [];
         let output = {};
         for (let i = 0; i < this.numOfRuns; i++) {
             let table = new Table();
-            table.addPlayer(new Player(this.bankroll, this.strategy));
-            table.run(this.maxRolls, this.maxShooters, verbose=false);
-            log(`${i},${table.totalPlayerCash},${this.bankroll},${table.dice.numberOfRolls}`);
-            results.push([i, table.totalPlayerCash, this.bankroll, table.dice.numberOfRolls]);
-            // let bucket = Math.floor(table.totalPlayerCash / 5);
-            let bucket = table.totalPlayerCash;
-            output[bucket] = (output[bucket] || 0) + 1;
+            this.strategies.forEach(s=>{
+                table.addPlayer(new Player(this.bankroll, s, s.name));
+            })
+            table.run(this.maxRolls, this.maxShooters, false);
+            table.players.forEach(player=>{
+                log(`${i},${player.name},${player.bankroll},${this.bankroll},${table.dice.numberOfRolls}`);
+                output[player.name] = output[player.name] || [];
+                output[player.name].push([i, player.bankroll, this.bankroll, table.dice.numberOfRolls]);
+                })
         }
         return output;
     }
@@ -902,6 +905,9 @@ function passline_odds(player, table, unit=5, strat_info=null, win_mult=1) {
     if (player.getBet("Odds", table.point))
         return;
     player.bet(new Odds(calculateOddsBet(table.point, unit=unit, win_mult=win_mult), passlineBet));
+}
+function passline_maxodds(player, table, unit=5, strat_info=null) {
+    passline_odds(player, table, unit, strat_info, '345') 
 }
 
 function dontpass(player, table, unit=5, strat_info=null) {
@@ -1147,10 +1153,10 @@ if hop_the_seven:
 // table.addPlayer(new Player(500, mike_harris, 1));
 // table.run(100, 20, verbose=true)
 
-let outputs = [];
-[mike_harris, pass_2come, pass_dontpass_horn12, hammerlock, dontpass_odds].forEach(strategy=>{
-    let sim = new Simulation(1000, 200, 20, 500, strategy);
-    //sim.printout();
-    outputs.push(sim.run());
-})
-console.log(outputs);
+// let outputs = [];
+// [mike_harris, pass_2come, pass_dontpass_horn12, hammerlock, dontpass_odds].forEach(strategy=>{
+//     let sim = new Simulation(1000, 200, 20, 500, strategy);
+//     //sim.printout();
+//     outputs.push(sim.run());
+// })
+// console.log(outputs);

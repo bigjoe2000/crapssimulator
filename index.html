@@ -1,0 +1,124 @@
+<html>
+    <head>
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <script src="craps.js"></script>
+        <script>
+            google.charts.load('current', {'packages':['corechart']});
+            let strategiesAvailable = {
+                passline : passline, 
+                passline_odds : passline_odds, 
+                passline_maxodds : passline_maxodds, 
+                dontpass : dontpass, 
+                dontpass_odds : dontpass_odds, 
+                place5689 : place5689, 
+                ironcross : ironcross, 
+                hammerlock : hammerlock, 
+                buy_4_10 : buy_4_10,
+                hardways : hardways, 
+                pass_dontpass_horn12 : pass_dontpass_horn12, 
+                pass_2come : pass_2come, 
+                mike_harris : mike_harris 
+            }
+        </script>
+    </head>
+    <body>
+        <div><label>Strategies to test</label><select name="strategies" multiple>
+        </select></div>
+        <div><label>Number of Runs</label><input type="number" name="numberOfRuns" value="2000"></div>
+        <div><label>Max Rolls</label><input type="number" name="maxRolls" value="100"></div>
+        <div><label>Max Shooters</label><input type="number" name="maxShooters" value="15"></div>
+        <div><label>Bankroll</label><input type="number" name="bankroll" value="1000"></div>
+        <button>Do It</button>
+        <div class="chart"></div>
+        <script>
+        document.querySelector('button').addEventListener('click', doIt);
+        let strategiesEl = document.querySelector('select[name=strategies]');
+        Object.keys(strategiesAvailable).forEach(s=>{
+            let optionEl = strategiesEl.appendChild(document.createElement('option'));
+            optionEl.innerText = s;
+        }) 
+        function doIt() {
+
+            let numberOfRuns = document.querySelector('input[name=numberOfRuns]').value;
+            let maxRolls = document.querySelector('input[name=maxRolls]').value;
+            let maxShooters = document.querySelector('input[name=maxShooters]').value;
+            let bankroll = document.querySelector('input[name=bankroll]').value;
+            let strategies = [];
+            let strategyOptions = strategiesEl.selectedOptions;
+            for (let i = 0; i < strategyOptions.length; i++) {
+                strategies.push(strategiesAvailable[strategyOptions[i].value]);
+            }
+            if (strategies.length == 0) {
+                strategies = [passline];
+            }
+            let sim = new Simulation(numberOfRuns, maxRolls, maxShooters, bankroll, strategies);
+
+            // Output is a dict of strategy names whose values are arrays of the form [simulationId, endingBankroll, StartingBankRoll, numberOfRoll]
+            let output = sim.run();
+            console.log(output);
+
+            var data = new google.visualization.DataTable();
+			data.addColumn('number', 'Win Amount');
+
+            // Summarized will be dict of strategy names with values of dicts of buckets to number of times
+            // A bucket is defined as a $5 range of ending bankroll. so bucket 0 means player ended with $0 to $5, bucket 500 means player ended with $2500-$2505
+            let summarized = {};
+            let maxBucket = -1;
+            let minBucket = 999999999999;
+            Object.keys(output).forEach(k=>{
+                data.addColumn('number', k);
+                console.log('summarizing:' + k);
+                summarized[k] = {};
+                output[k].forEach(array=>{
+                    console.log('array:' + array);
+                    let bucket = parseInt(array[1]/5);
+                    summarized[k][bucket] = summarized[k][bucket] || 0;
+                    summarized[k][bucket] += 1;
+                    maxBucket = Math.max(maxBucket, bucket);
+                    minBucket = Math.min(minBucket, bucket);
+                })
+            })
+
+            console.log(summarized);
+            for (let bucket = minBucket; bucket <= maxBucket; bucket++) {
+                let row = [bucket * 5];
+                Object.keys(output).forEach(k=>{
+                    row.push(summarized[k][bucket] || 0);
+                })
+                data.addRow(row);
+            };
+
+            google.charts.setOnLoadCallback(drawChart.bind(null, data));
+            // [mike_harris, pass_2come, hammerlock, dontpass_odds].forEach(strategy=>{
+            //     data.addColumn('number', strategy.name);
+            //     console.log("*******");
+            //     console.log("*******   Running simulation for:" + strategy.name);
+            //     let sim = new Simulation(100, 200, 20, 500, strategy);
+            //     // sim.printout();
+            //     outputs.push(sim.run());
+            // })
+            // let max = -1;
+            // outputs.forEach(o=>Object.keys(o).forEach(x=>max = Math.max(max, x)));
+            // for (let i = 0; i <= max; i++) {
+            //     let row = [i];
+            //     outputs.forEach(o=>{
+            //         row.push(o[i] || 0);
+            //     });
+            //     data.addRow(row);
+            //     console.log(row);
+            // };
+            // google.charts.setOnLoadCallback(drawChart.bind(null, data));
+        }
+
+        function drawChart(data) {
+            //data = google.visualization.arrayToDataTable(data);
+            new google.visualization.LineChart(document.querySelector('div.chart')).draw(data, {
+                title: 'Strategy Comparisons',
+                curveType: 'function',
+                legend: 'bottom',
+                height: 600
+            });
+        }
+        </script>
+    </body>
+</html>
