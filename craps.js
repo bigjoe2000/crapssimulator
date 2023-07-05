@@ -26,12 +26,14 @@ class Player {
         Sum of bet value for the player
      */;
 
-    constructor(bankroll, bettingStrategy=null, name='Player') {
+    constructor(bankroll, bettingStrategy=null, name='Player', newStrategy=null) {
+        this.startingBankroll = bankroll;
         this.bankroll = bankroll;
         this.bettingStrategy = bettingStrategy;
         this.name = name;
         this.betsOnTable = [];
         this.totalBetAmount = 0;
+        this.newStrategy = newStrategy;
     }
 
     bet(bet) {
@@ -50,6 +52,10 @@ class Player {
             this.totalBetAmount -= bet.betAmount;
             this.betsOnTable.splice(idx, 1);
         }
+    }
+
+    hasBet(bet) {
+        return this.betsOnTable.indexOf(bet) > -1;
     }
 
     getBet(name, subname='') {
@@ -73,8 +79,10 @@ class Player {
     }
 
     addStrategyBets(table, unit, info) {
+        this.newStrategy.update(table, this);
         /*  Implement the given betting strategy  */
-        return this.bettingStrategy(this, table, unit, info);
+        //return this.bettingStrategy(this, table, unit, info);
+        return null;
     }
 
     updateBets(table, dice, verbose=false) {
@@ -194,7 +202,7 @@ class Table {
     playerHasBets : bool
         Boolean value for whether any player has a bet on the table.
     strategyInfo : dictionary
-        Contains information stored from the strategy, usually mean for
+        Contains information stored from the strategy, usually meant for
         strategies that alter based on past information
     betUpdateInfo : dictionary
         Contains information from updating bets, for given player and a bet
@@ -214,12 +222,15 @@ class Table {
         this.passRolls = 0;
         this.lastRoll = null;
         this.numberOfShooters = 1;
+        this.shooterNaturals = 0;
+        this.shooterPoints = 0;
+        this.rollDistribution = Array(13).fill(0);
     }
 
     static POINTS = [4, 5, 6, 8, 9, 10];
 
     hasPoint() {
-        return this.point;
+        return this.point > 0;
     }
 
     setPayouts(name, value) {
@@ -273,21 +284,21 @@ class Table {
             if (verbose) {
                 this.players.forEach(p=>{
                     log("Player:" + p.name + ' ' + p.betsOnTable.map(b=>`${b.name}${b.subname}:${b.betAmount}`).join(' '));
-                    
                 });
             }
 
             this.dice.roll();
+            this.rollDistribution[this.dice.total] += 1;
             if (verbose) {
                 log("")
-                log("Dice out!", !this.hasPoint() ? " -- Come out roll" : "");
+                log("Dice out!" + (!this.hasPoint() ? " -- Come out roll" : ""));
                 log(`Shooter rolled ${this.dice.total} ${this.dice.result}`);
             }
             this.updatePlayerBets(this.dice, verbose);
             this.updateTable(this.dice);
             if (verbose) {
                 log(`Point is ${this.point ? "On" : "Off"} (${this.point})`);
-                log(`Total Player Cash is ${this.totalPlayerCash}`);
+                log("Players: " + this.players.map(p=>p.name + ':$' + (p.bankroll + p.totalBetAmount)).join(' '));
             }
 
             // evaluate the stopping condition
@@ -305,6 +316,9 @@ class Table {
                 )
             }
         }
+        log(`Rolls:${this.rollDistribution.reduce((s, a) => s + a, 0)}`);
+        log(`Shooters:${this.numberOfShooters}`);
+        log(`Roll Distribution:${this.rollDistribution.splice(2)}`);
     };
 
     addPlayerBets() {
@@ -336,14 +350,25 @@ class Table {
          * update table attributes based on previous dice roll
          */
         this.passRolls += 1
-        if (this.hasPoint() && dice.total == 7)
-            this.numberOfShooters += 1;
-        if (this.hasPoint() && (dice.total == 7 || dice.total == this.point))
-            this.passRolls = 0;
 
-        if (this.point && [7, this.point].includes(dice.total)) {
+        if (this.hasPoint()) {
+            // Shooter sevens out
+            if (dice.total == 7) {
+                this.numberOfShooters += 1;
+                this.shooterNaturals = 0;
+                this.shooterPoints = 0;
+                this.passRolls = 0;
+                // Shooter makes their point
+            } else if (dice.total == this.point) {
+                this.shooterPoints += 1;
+                this.passRolls = 0;
+            }
+        }
+
+        // Reset the point
+        if (this.hasPoint() && [7, this.point].includes(dice.total)) {
             this.point = null;
-        } else if (!this.point && Table.POINTS.includes(dice.total)) {
+        } else if (!this.hasPoint() && Table.POINTS.includes(dice.total)) {
             this.point = dice.total;
         }
 
@@ -739,48 +764,6 @@ class AnySeven extends Bet {
     }
 }
 
-class Horn12 extends Bet {
-    constructor(betAmount) {
-        super(betAmount);
-        this.name = 'Horn12';
-        this.subname = '';
-        this.winning_numbers = [12];
-        this.losing_numbers =  ALL_NUMBERS.filter(x=>!this.winning_numbers.includes(x));
-        this.payoutratio = 30;
-    }
-}
-class Horn2 extends Bet {
-    constructor(betAmount) {
-        super(betAmount);
-        this.name = 'Horn2';
-        this.subname = '';
-        this.winning_numbers = [2];
-        this.losing_numbers =  ALL_NUMBERS.filter(x=>!this.winning_numbers.includes(x));
-        this.payoutratio = 30;
-    }
-}
-class Horn3 extends Bet {
-    constructor(betAmount) {
-        super(betAmount);
-        this.name = 'Horn3';
-        this.subname = '';
-        this.winning_numbers = [3];
-        this.losing_numbers =  ALL_NUMBERS.filter(x=>!this.winning_numbers.includes(x));
-        this.payoutratio = 15;
-    }
-}
-
-class Horn11 extends Bet {
-    constructor(betAmount) {
-        super(betAmount);
-        this.name = 'Horn11';
-        this.subname = '';
-        this.winning_numbers = [11];
-        this.losing_numbers =  ALL_NUMBERS.filter(x=>!this.winning_numbers.includes(x));
-        this.payoutratio = 15;
-    }
-}
-
 class Hard extends Bet {
     constructor(number, betAmount) {
         super(betAmount);
@@ -841,12 +824,14 @@ class Simulation {
         this.maxRolls = maxRolls;
         this.maxShooters = maxShooters;
         this.bankroll = bankroll;
-        this.strategy = strategy;
+        this.strategies = Array.isArray(strategy) ? strategy : [strategy];
     }
 
     printout() {
         let table = new Table();
-        table.addPlayer(new Player(this.bankroll, this.strategy));
+        for (let i = 0; i < this.strategies.length; i++) {
+            table.addPlayer(new Player(this.bankroll, this.strategies[i], name=this.strategies[i].name));
+        }
         table.run(this.maxRolls, this.maxShooters);
     }
 
@@ -855,10 +840,17 @@ class Simulation {
         let output = {};
         for (let i = 0; i < this.numOfRuns; i++) {
             let table = new Table();
-            table.addPlayer(new Player(this.bankroll, this.strategy));
+            for (let i = 0; i < this.strategies.length; i++) {
+                table.addPlayer(new Player(this.bankroll, this.strategies[i], name=this.strategies[i].name));
+            }
             table.run(this.maxRolls, this.maxShooters, verbose=false);
-            log(`${i},${table.totalPlayerCash},${this.bankroll},${table.dice.numberOfRolls}`);
-            results.push([i, table.totalPlayerCash, this.bankroll, table.dice.numberOfRolls]);
+            let row = [i, this.bankroll, table.dice.numberOfRolls];
+            for (let i = 0; i < this.strategies.length; i++) {
+                row.push(table.players[i].totalBetAmount + table.players[i].bankroll);
+            }
+
+            results.push(row);
+            log(row.join(','));
             // let bucket = Math.floor(table.totalPlayerCash / 5);
             let bucket = table.totalPlayerCash;
             output[bucket] = (output[bucket] || 0) + 1;
@@ -868,24 +860,117 @@ class Simulation {
 }
 
 
+class Strategy {
+    info = {};
+    unit = 5;
+    maxRolls = 0; // 0 for no limit
+    maxShooters = 0; // 0 for no limit
+    maxBankroll = 0; // 0 for no limit
+    stopped = false;
+    strategyBets = [];
 
-        // results = pd.DataFrame(results, columns = ['sim', 'final', 'initial', 'n_rolls'])
-        // results['winnings'] = results['final'] - results['initial']
-        // p = (
-        //     ggplot(results, aes(x='winnings')) + 
-        //     geom_vline(xintercept = 0, color = 'grey') + 
-        //     geom_density() +
-        //     theme_classic() + 
-        //     labs(x = "Winnings", y = "Relative chance of outcome", title = "Bankroll:" + str(self.bankroll) + " Sims:" + str(self.num_of_runs) + " MaxShooter:" + str(self.max_shooters) + " MaxRolls:" + str(self.max_rolls))
-        // )
-        // ggsave(plot = p, filename = sim_name, path = "./output/simulations/")
-        // # print("Sum of output density",sum(output_density.values()))
-        // # print("Max of output density",max(output_density.values()))
-        // # print("Min of output density keys",min(output_density.keys()))
-        // # print("Max of output density keys",max(output_density.keys()))
-        // # print(output_density)
-        // return output_density
+    isStopped() {
+        return this.stopped;
+    }
 
+    shouldStop(table, player) {
+        if (player.bankroll < this.unit) {
+            stopped = true;
+        }
+        if (this.maxBankRoll > 0 && player.bankroll > this.maxBankroll) {
+            stopped = true;
+        }
+        if (table.numberOfRolls >= this.maxRolls) {
+            stopped = true;
+        }
+        if (table.numberOfShooters >= this.maxShooters) {
+            stopped = true;
+        }
+        return this.isStopped();
+    }
+
+    update(table, player) {
+        if (this.isStopped()) {
+            return;
+        }
+        this.strategyBets.forEach(b=>b.update(table, player));
+    }
+
+    addBet(strategyBet) {
+        this.strategyBets.push(strategyBet);
+    }
+
+}
+
+class StrategyBet {
+    constructor(conditions, betClass, betArguments, repeatCount) {
+        this.conditions = conditions;
+        this.betClass = betClass,
+        this.betArguments = betArguments || [];
+        this.placed = [];
+        this.repeatCount = repeatCount || 1;
+    }
+    
+    /** Decides whether or not to make the bet */
+    update(table, player) {
+        // Check for removed bets
+        this.placed = this.placed.filter(b=>player.hasBet(b));
+
+        // If bet is already made
+        if (this.placed.length >= this.repeatCount) {
+            return;
+        }
+
+        if (this.conditions.every(c=>
+            c.isTrue(table, player)
+        )) {
+            let b = new this.betClass(...this.betArguments);
+            this.placed.push(b);
+            player.bet(b);
+        }
+    }
+
+}
+
+class Condition {
+    isTrue(table, player) {
+        return true;
+    }
+}
+
+class ConditionPointOff extends Condition {
+    isTrue(table, player) {
+        return !table.hasPoint();
+    }
+}
+
+class ConditionPointOn extends Condition {
+    isTrue(table, player) {
+        return table.hasPoint();
+    }
+}
+
+class ConditionPointIs extends Condition {
+    constructor(number) {
+        super();
+        this.number = number;
+    }
+
+    isTrue(table, player) {
+        return table.hasPoint() && table.point == this.number;
+    }
+}
+
+class ConditionPointIsNot extends Condition {
+    constructor(number) {
+        super();
+        this.number = number;
+    }
+
+    isTrue(table, player) {
+        return table.hasPoint() && table.point != this.number;
+    }
+}
 
 function passline(player, table, unit=5, strat_info=null) {
     if (!table.hasPoint() && !player.getBet("PassLine"))
@@ -1023,7 +1108,7 @@ function pass_dontpass_horn12(player, table, unit=5, strat_info=null) {
     dontpass(player, table, unit);
 
     let mult = table.dice.total == 12 ? 10 : 1;
-    player.bet(new Horn12(unit * mult));
+    player.bet(new Hop('66', unit * mult));
 }
 
 function pass_2come(player, table, unit=5, strat_info=null) {
@@ -1086,71 +1171,26 @@ function mike_harris(player, table, unit=5, strat_info=null) {
 
     }
 }
-/**
- * 
- * current_numbers = []
-for bet in player.bets_on_table:
-    current_numbers += bet.winning_numbers
-current_numbers = list(set(current_numbers))
-
-if table.point == "On":
-    # Put odds on any come bets
-    for bet in player.bets_on_table:
-        if bet.name == "Come" and bet.subname:
-            if not player.has_bet("Odds", bet.subname):
-                player.bet(Odds(unit, bet))
-
-
-    # Always run a come bet
-    player.bet(Come(unit))
-
-    # always place 5, 6, 8, 9 when they aren't come bets or place bets already
-    if 5 not in current_numbers and 5 != table.point.number:
-        player.bet(Place5(unit))
-    if 6 not in current_numbers and 6 != table.point.number:
-        player.bet(Place6(6 / 5 * unit))
-    if 8 not in current_numbers and 8 != table.point.number:
-        player.bet(Place8(6 / 5 * unit))
-    if 9 not in current_numbers and 9 != table.point.number:
-        player.bet(Place9(unit))
-
-    # buy the 4 and 10 if not already covered
-    if 4 not in current_numbers and 4 != table.point.number:
-        player.bet(Buy(unit, 4))
-    if 10 not in current_numbers and 10 != table.point.number:
-        player.bet(Buy(unit, 10))
-
-if table.point == "On" and table.point.number % 2 == 0 and player.get_bet("Hard", table.point.number) == None:
-    player.bet(Hard(table.point.number, unit))
-
-# hop each of the 3 sevens when you have established 2 Come bets (one of which is 4/10) or 3 come bets
-# start with 5 each hop, +1 for every other established come bet
-# at $5 table, can start the hop at $1
-come_bets = len([x for x in player.bets_on_table if x.name == 'Come' and x.subname])
-
-# one of those come bets, by definition, is not established
-hop_the_seven = come_bets > 2
-if not hop_the_seven and come_bets > 1 and (player.has_bet("Come", "4") or player.has_bet("Come", "10")):
-    hop_the_seven = True
-
-if hop_the_seven:
-    hop_amount = math.ceil(unit/3) + max(0, come_bets - 4)
-    player.bet(Hop("16", hop_amount))
-    player.bet(Hop("25", hop_amount))
-    player.bet(Hop("34", hop_amount))
- */
 
 
 
 // dice = new FakeDice([[5,5],[5,4],[5,3],[5,2]]);
-// table = new Table(new Dice());
-// table.addPlayer(new Player(500, mike_harris, 1));
-// table.run(100, 20, verbose=true)
+table = new Table(new Dice());
 
-let outputs = [];
-[mike_harris, pass_2come, pass_dontpass_horn12, hammerlock, dontpass_odds].forEach(strategy=>{
-    let sim = new Simulation(1000, 200, 20, 500, strategy);
-    //sim.printout();
-    outputs.push(sim.run());
-})
-console.log(outputs);
+foobar = new Strategy();
+foobar.addBet(new StrategyBet([new ConditionPointOff()], DontPass, [5]));
+foobar.addBet(new StrategyBet([new ConditionPointOff()], PassLine, [5]));
+foobar.addBet(new StrategyBet([new ConditionPointOn()], Hop, ['66', 5]));
+foobar.addBet(new StrategyBet([new ConditionPointIsNot(5)], Place, [5, 5]));
+foobar.addBet(new StrategyBet([new ConditionPointIsNot(6)], Place, [6, 6]));
+foobar.addBet(new StrategyBet([new ConditionPointIsNot(8)], Place, [6, 8]));
+foobar.addBet(new StrategyBet([new ConditionPointIsNot(9)], Place, [5, 9]));
+foobar.addBet(new StrategyBet([new ConditionPointOn()], Come, [5], 3));
+
+table.addPlayer(new Player(500, passline, 1, foobar));
+table.run(100, 20, verbose=true)
+
+// let outputs = [];
+// let sim = new Simulation(1000, 200, 20, 500, [mike_harris, pass_2come, pass_dontpass_horn12, hammerlock, dontpass_odds]);
+// sim.printout();
+
