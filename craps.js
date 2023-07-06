@@ -273,7 +273,7 @@ class Table {
             this.addPlayerBets();
             if (verbose) {
                 this.players.forEach(p=>{
-                    log("Player:" + p.name + ' ' + p.bankroll + ' ' + p.betsOnTable.map(b=>`${b.name}${b.subname}:${b.betAmount}`).join(' '));
+                    log("Player:" + p.name + ' Bankroll:' + p.bankroll + ' Bets:' + p.betsOnTable.map(b=>`${b.name}${b.subname}:${b.betAmount}`).join(' '));
                 });
             }
 
@@ -286,7 +286,7 @@ class Table {
             this.updateTable(this.dice);
             if (verbose) {
                 log(`Point is ${this.point ? "On" : "Off"} (${this.point})`);
-                log(`Total Player Cash is ${this.totalPlayerCash}`);
+                log(`Total Cash On Table (bets plus bankroll) is ${this.totalPlayerCash}`);
             }
 
             // evaluate the stopping condition
@@ -1038,7 +1038,7 @@ function pass_2come(player, table, unit=5, strat_info=null) {
             player.bet(new Odds(unit, b));
         }
      });
-     if (player.countBets("Come") < 2) {
+     if (table.hasPoint() && player.countBets("Come") < 2) {
         player.bet(new Come(unit));
     }
 }
