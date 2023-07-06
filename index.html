@@ -36,7 +36,6 @@
         <div><label>Max Rolls</label><input type="number" name="maxRolls" value="100"></div>
         <div><label>Max Shooters</label><input type="number" name="maxShooters" value="15"></div>
         <div><label>Bankroll</label><input type="number" name="bankroll" value="1000"></div>
-        <div><label>BucketSize</label><input type="number" name="bucketSize" value="5"></div>
         <div><label>Just one run</label><input type="checkbox" name="once"></div>
         <button>Do It</button>
         <div class="printout"></div>
@@ -57,7 +56,6 @@
             let maxRolls = document.querySelector('input[name=maxRolls]').value;
             let maxShooters = document.querySelector('input[name=maxShooters]').value;
             let bankroll = document.querySelector('input[name=bankroll]').value;
-            let bucketSize = document.querySelector('input[name=bucketSize]').value;
 
             let strategies = [];
             let strategyOptions = strategiesEl.selectedOptions;
@@ -87,30 +85,29 @@
             var data = new google.visualization.DataTable();
 			data.addColumn('number', 'Win Amount');
 
-            // Summarized will be dict of strategy names with values of dicts of buckets to number of times
-            // A bucket is defined as a $5 range of ending bankroll. so bucket 0 means player ended with $0 to $5, bucket 500 means player ended with $2500-$2505
+            // Summarized will be dict of strategy names with values of dicts of ending backroll to number of times that occurred
             let summarized = {};
-            let maxBucket = -1;
-            let minBucket = 999999999999;
+            let max = -1;
+            let min = Number.MAX_SAFE_INTEGER;
             Object.keys(output).forEach(k=>{
                 data.addColumn('number', k);
                 console.log('summarizing:' + k);
                 summarized[k] = {};
                 output[k].forEach(array=>{
+                    let winAmount = parseInt(array[1]);
                     console.log('array:' + array);
-                    let bucket = parseInt(array[1]/bucketSize);
-                    summarized[k][bucket] = summarized[k][bucket] || 0;
-                    summarized[k][bucket] += 1;
-                    maxBucket = Math.max(maxBucket, bucket);
-                    minBucket = Math.min(minBucket, bucket);
+                    summarized[k][winAmount] = summarized[k][winAmount] || 0;
+                    summarized[k][winAmount] += 1;
+                    max = Math.max(max, winAmount);
+                    min = Math.min(min, winAmount);
                 })
             })
 
             console.log(summarized);
-            for (let bucket = minBucket; bucket <= maxBucket; bucket++) {
-                let row = [bucket * bucketSize];
+            for (let i = min; i <= max; i++) {
+                let row = [i];
                 Object.keys(output).forEach(k=>{
-                    row.push(summarized[k][bucket] || 0);
+                    row.push(summarized[k][i] || null);
                 })
                 data.addRow(row);
             };
@@ -143,7 +140,8 @@
                 title: 'Strategy Comparisons',
                 curveType: 'function',
                 legend: 'bottom',
-                height: 600
+                height: 600,
+                interpolateNulls: true
             });
         }
         </script>

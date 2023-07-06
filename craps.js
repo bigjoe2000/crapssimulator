@@ -704,11 +704,11 @@ class LayOdds extends Bet {
         this.losing_numbers = bet_object.losing_numbers;
         this.offOnComeOut = true;
     
-        if (this.losing_numbers == [4] || this.losing_numbers == [10]) {
+        if ([4,10].indexOf(this.losing_numbers[0]) > -1) {
             this.payoutratio = 1 / 2;
-        } else if (this.losing_numbers == [5] || this.losing_numbers == [9]) {
+        } else if ([5,9].indexOf(this.losing_numbers[0]) > -1) {
             this.payoutratio = 2 / 3;
-        } else if (this.losing_numbers == [6] || this.losing_numbers == [8]) {
+        } else if ([6,8].indexOf(this.losing_numbers[0]) > -1) {
             this.payoutratio = 5 / 6;
         }
     }
