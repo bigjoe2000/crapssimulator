@@ -267,19 +267,18 @@ class Table {
 
         let continueRolling = true;
         while (continueRolling) {
+            log("*** Preparing for next roll.. adding player bets");
 
             // players make their bets
             this.addPlayerBets();
             if (verbose) {
                 this.players.forEach(p=>{
-                    log("Player:" + p.name + ' ' + p.betsOnTable.map(b=>`${b.name}${b.subname}:${b.betAmount}`).join(' '));
-                    
+                    log("Player:" + p.name + ' ' + p.bankroll + ' ' + p.betsOnTable.map(b=>`${b.name}${b.subname}:${b.betAmount}`).join(' '));
                 });
             }
 
             this.dice.roll();
             if (verbose) {
-                log("")
                 log("Dice out!", !this.hasPoint() ? " -- Come out roll" : "");
                 log(`Shooter rolled ${this.dice.total} ${this.dice.result}`);
             }
@@ -547,11 +546,11 @@ class Odds extends Bet {
         this.losing_numbers = bet_object.losing_numbers;
         this.offOnComeOut = true;
     
-        if (this.winning_numbers == [4] || this.winning_numbers == [10]) {
+        if ([4,10].indexOf(this.winning_numbers[0]) > -1) {
             this.payoutratio = 2 / 1;
-        } else if (this.winning_numbers == [5] || this.winning_numbers == [9]) {
+        } else if([5,9].indexOf(this.winning_numbers[0]) > -1) {
             this.payoutratio = 3 / 2;
-        } else if (this.winning_numbers == [6] || this.winning_numbers == [8]) {
+        } else if ([6,8].indexOf(this.winning_numbers[0]) > -1) {
             this.payoutratio = 6 / 5;
         }
     }

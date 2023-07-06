@@ -19,6 +19,14 @@
                 pass_2come : pass_2come, 
                 mike_harris : mike_harris 
             }
+
+            removeChildren = function(el, leaveSome) {
+                let n = leaveSome || 0;
+                while(el.children.length > n) {
+                    el.removeChild(el.lastChild);
+                }
+            }
+
         </script>
     </head>
     <body>
@@ -28,21 +36,29 @@
         <div><label>Max Rolls</label><input type="number" name="maxRolls" value="100"></div>
         <div><label>Max Shooters</label><input type="number" name="maxShooters" value="15"></div>
         <div><label>Bankroll</label><input type="number" name="bankroll" value="1000"></div>
+        <div><label>BucketSize</label><input type="number" name="bucketSize" value="5"></div>
+        <div><label>Just one run</label><input type="checkbox" name="once"></div>
         <button>Do It</button>
+        <div class="printout"></div>
         <div class="chart"></div>
         <script>
         document.querySelector('button').addEventListener('click', doIt);
         let strategiesEl = document.querySelector('select[name=strategies]');
+        let logEl = document.querySelector('div.printout');
+
         Object.keys(strategiesAvailable).forEach(s=>{
             let optionEl = strategiesEl.appendChild(document.createElement('option'));
             optionEl.innerText = s;
         }) 
         function doIt() {
+            removeChildren(logEl);
 
             let numberOfRuns = document.querySelector('input[name=numberOfRuns]').value;
             let maxRolls = document.querySelector('input[name=maxRolls]').value;
             let maxShooters = document.querySelector('input[name=maxShooters]').value;
             let bankroll = document.querySelector('input[name=bankroll]').value;
+            let bucketSize = document.querySelector('input[name=bucketSize]').value;
+
             let strategies = [];
             let strategyOptions = strategiesEl.selectedOptions;
             for (let i = 0; i < strategyOptions.length; i++) {
@@ -53,6 +69,17 @@
             }
             let sim = new Simulation(numberOfRuns, maxRolls, maxShooters, bankroll, strategies);
 
+            if (document.querySelector('input[name=once]').checked) {
+                sim.printout();
+                let line;
+                while (logs.length) {
+                    let el = document.createElement('div');
+                    el.innerText = logs.shift();
+                    logEl.appendChild(el);
+                    console.log(line);
+                };
+                return;
+            }
             // Output is a dict of strategy names whose values are arrays of the form [simulationId, endingBankroll, StartingBankRoll, numberOfRoll]
             let output = sim.run();
             console.log(output);
@@ -71,7 +98,7 @@
                 summarized[k] = {};
                 output[k].forEach(array=>{
                     console.log('array:' + array);
-                    let bucket = parseInt(array[1]/5);
+                    let bucket = parseInt(array[1]/bucketSize);
                     summarized[k][bucket] = summarized[k][bucket] || 0;
                     summarized[k][bucket] += 1;
                     maxBucket = Math.max(maxBucket, bucket);
@@ -81,7 +108,7 @@
 
             console.log(summarized);
             for (let bucket = minBucket; bucket <= maxBucket; bucket++) {
-                let row = [bucket * 5];
+                let row = [bucket * bucketSize];
                 Object.keys(output).forEach(k=>{
                     row.push(summarized[k][bucket] || 0);
                 })
