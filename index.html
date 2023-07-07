@@ -38,17 +38,27 @@
         <div><label>Bankroll</label><input type="number" name="bankroll" value="1000"></div>
         <div><label>Debug one run only</label><input type="checkbox" name="once"></div>
         <button>Do It</button>
+        <div class="status"></div>
         <div class="printout"></div>
         <div class="chart"></div>
         <script>
-        document.querySelector('button').addEventListener('click', doIt);
+        document.querySelector('button').addEventListener('click', setItUp);
         let strategiesEl = document.querySelector('select[name=strategies]');
         let logEl = document.querySelector('div.printout');
+        let statusEl = document.querySelector('div.status');
 
         Object.keys(strategiesAvailable).forEach(s=>{
             let optionEl = strategiesEl.appendChild(document.createElement('option'));
             optionEl.innerText = s;
         }) 
+
+        function setItUp() {
+            if (!document.querySelector('input[name=once]').checked) {
+                statusEl.innerText = 'Running Simulation';
+            }
+            setTimeout(doIt, 0);
+        }
+
         function doIt() {
             removeChildren(logEl);
 
@@ -78,6 +88,7 @@
                 };
                 return;
             }
+
             // Output is a dict of strategy names whose values are arrays of the form [simulationId, endingBankroll, StartingBankRoll, numberOfRoll]
             let output = sim.run();
             console.log(output);
@@ -111,8 +122,10 @@
                 })
                 data.addRow(row);
             };
-
             google.charts.setOnLoadCallback(drawChart.bind(null, data));
+            statusEl.innerText = '';
+
+
             // [mike_harris, pass_2come, hammerlock, dontpass_odds].forEach(strategy=>{
             //     data.addColumn('number', strategy.name);
             //     console.log("*******");
