@@ -26,8 +26,19 @@
                     el.removeChild(el.lastChild);
                 }
             }
-
         </script>
+        <style>
+            .run {
+                border: 1px solid black;
+            }
+            pre {
+                padding: 8px;
+            }
+            .center {
+                width: 50%;
+                margin: auto;
+            }
+        </style>
     </head>
     <body>
         <div><label>Strategies to test</label><select name="strategies" multiple>
@@ -62,22 +73,23 @@
         }
 
         function doIt() {
-            let numberOfRuns = document.querySelector('input[name=numberOfRuns]').value;
-            let maxRolls = document.querySelector('input[name=maxRolls]').value;
-            let maxShooters = document.querySelector('input[name=maxShooters]').value;
-            let bankroll = document.querySelector('input[name=bankroll]').value;
-
             let title = 'Strategy Comparison ' + new Date().toString() + ' ';
             let strategies = [];
             let strategyOptions = strategiesEl.selectedOptions;
             for (let i = 0; i < strategyOptions.length; i++) {
                 strategies.push(strategiesAvailable[strategyOptions[i].value]);
-                title += strategyOptions[i].value + ' ';
             }
+            let config = {
+                numberOfRuns : document.querySelector('input[name=numberOfRuns]').value,
+                maxRolls : document.querySelector('input[name=maxRolls]').value,
+                maxShooters : document.querySelector('input[name=maxShooters]').value,
+                bankroll : document.querySelector('input[name=bankroll]').value
+            }
+
             if (strategies.length == 0) {
                 strategies = [passline];
             }
-            let sim = new Simulation(numberOfRuns, maxRolls, maxShooters, bankroll, strategies);
+            let sim = new Simulation(config.numberOfRuns, config.maxRolls, config.maxShooters, config.bankroll, strategies);
 
             if (document.querySelector('input[name=once]').checked) {
                 sim.printout();
@@ -123,18 +135,26 @@
                 })
                 data.addRow(row);
             };
-            google.charts.setOnLoadCallback(drawChart.bind(null, data, title));
+            google.charts.setOnLoadCallback(drawChart.bind(null, data, title, config));
             statusEl.innerText = '';
         }
 
-        function drawChart(data, title) {
+        function drawChart(data, title, config) {
             //data = google.visualization.arrayToDataTable(data);
             let parentEl = document.querySelector('div.chart');
-            new google.visualization.LineChart(parentEl.insertBefore(document.createElement('div'), parentEl.firstChild)).draw(data, {
-                title: title,
+            let runEl = parentEl.insertBefore(document.createElement('div'), parentEl.firstChild);
+            runEl.classList.add('run');
+            let titleEl = runEl.appendChild(document.createElement('h2'));
+            titleEl.innerText = title;
+            titleEl.classList.add('center');
+            let configEl = runEl.appendChild(document.createElement('pre'));
+            configEl.innerText = JSON.stringify(config, null, 2);
+            configEl.classList.add('center');
+
+            new google.visualization.LineChart(runEl.appendChild(document.createElement('div'), parentEl.firstChild)).draw(data, {
                 curveType: 'function',
                 legend: 'bottom',
-                height: 600,
+                height: 400,
                 interpolateNulls: true
             });
         }
