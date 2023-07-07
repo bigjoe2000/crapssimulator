@@ -53,6 +53,8 @@
         }) 
 
         function setItUp() {
+            removeChildren(logEl);
+
             if (!document.querySelector('input[name=once]').checked) {
                 statusEl.innerText = 'Running Simulation';
             }
@@ -60,8 +62,6 @@
         }
 
         function doIt() {
-            removeChildren(logEl);
-
             let numberOfRuns = document.querySelector('input[name=numberOfRuns]').value;
             let maxRolls = document.querySelector('input[name=maxRolls]').value;
             let maxShooters = document.querySelector('input[name=maxShooters]').value;
@@ -86,7 +86,6 @@
                     let el = document.createElement('div');
                     el.innerText = logs.shift();
                     logEl.appendChild(el);
-                    console.log(line);
                 };
                 return;
             }
@@ -130,7 +129,8 @@
 
         function drawChart(data, title) {
             //data = google.visualization.arrayToDataTable(data);
-            new google.visualization.LineChart(document.querySelector('div.chart').appendChild(document.createElement('div'))).draw(data, {
+            let parentEl = document.querySelector('div.chart');
+            new google.visualization.LineChart(parentEl.insertBefore(document.createElement('div'), parentEl.firstChild)).draw(data, {
                 title: title,
                 curveType: 'function',
                 legend: 'bottom',

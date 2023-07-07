@@ -267,11 +267,11 @@ class Table {
 
         let continueRolling = true;
         while (continueRolling) {
-            log("*** Preparing for next roll.. adding player bets");
 
             // players make their bets
             this.addPlayerBets();
             if (verbose) {
+                log("*** Preparing for next roll.. adding player bets");
                 this.players.forEach(p=>{
                     log("Player:" + p.name + ' Bankroll:' + p.bankroll + ' Bets:' + p.betsOnTable.map(b=>`${b.name}${b.subname}:${b.betAmount}`).join(' '));
                 });
@@ -860,7 +860,7 @@ class Simulation {
             })
             table.run(this.maxRolls, this.maxShooters, false);
             table.players.forEach(player=>{
-                log(`${i},${player.name},${player.bankroll},${this.bankroll},${table.dice.numberOfRolls}`);
+                // log(`${i},${player.name},${player.bankroll},${this.bankroll},${table.dice.numberOfRolls}`);
                 output[player.name] = output[player.name] || [];
                 output[player.name].push([i, player.bankroll, this.bankroll, table.dice.numberOfRolls]);
                 })
