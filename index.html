@@ -67,10 +67,12 @@
             let maxShooters = document.querySelector('input[name=maxShooters]').value;
             let bankroll = document.querySelector('input[name=bankroll]').value;
 
+            let title = 'Strategy Comparison ' + new Date().toString() + ' ';
             let strategies = [];
             let strategyOptions = strategiesEl.selectedOptions;
             for (let i = 0; i < strategyOptions.length; i++) {
                 strategies.push(strategiesAvailable[strategyOptions[i].value]);
+                title += strategyOptions[i].value + ' ';
             }
             if (strategies.length == 0) {
                 strategies = [passline];
@@ -122,35 +124,14 @@
                 })
                 data.addRow(row);
             };
-            google.charts.setOnLoadCallback(drawChart.bind(null, data));
+            google.charts.setOnLoadCallback(drawChart.bind(null, data, title));
             statusEl.innerText = '';
-
-
-            // [mike_harris, pass_2come, hammerlock, dontpass_odds].forEach(strategy=>{
-            //     data.addColumn('number', strategy.name);
-            //     console.log("*******");
-            //     console.log("*******   Running simulation for:" + strategy.name);
-            //     let sim = new Simulation(100, 200, 20, 500, strategy);
-            //     // sim.printout();
-            //     outputs.push(sim.run());
-            // })
-            // let max = -1;
-            // outputs.forEach(o=>Object.keys(o).forEach(x=>max = Math.max(max, x)));
-            // for (let i = 0; i <= max; i++) {
-            //     let row = [i];
-            //     outputs.forEach(o=>{
-            //         row.push(o[i] || 0);
-            //     });
-            //     data.addRow(row);
-            //     console.log(row);
-            // };
-            // google.charts.setOnLoadCallback(drawChart.bind(null, data));
         }
 
-        function drawChart(data) {
+        function drawChart(data, title) {
             //data = google.visualization.arrayToDataTable(data);
-            new google.visualization.LineChart(document.querySelector('div.chart')).draw(data, {
-                title: 'Strategy Comparisons',
+            new google.visualization.LineChart(document.querySelector('div.chart').appendChild(document.createElement('div'))).draw(data, {
+                title: title,
                 curveType: 'function',
                 legend: 'bottom',
                 height: 600,
