@@ -1,0 +1,339 @@
+<html>
+    <head></head>
+    <body>
+        <style>
+            .table {
+                background-image: url("crapslayout.png");
+                width: 1575px;
+                height: 724px;
+                position: relative;
+            }
+            .chip {
+                --box-shadow-color: rgb(173, 12, 12);
+                width: 30px;
+                height: 30px;
+                border: 1px solid black;
+                border-radius: 30px;
+                background: red;
+                box-shadow: 0px 3px 0 0 var(--box-shadow-color);
+                font-size: 15px;
+                text-align : center;
+                line-height: 30px;
+                position: absolute;
+            }
+            .chipstack {
+                width: 30px;
+                border: 1px solid black;
+                height: 30px;
+                position: absolute;
+            }
+
+            .player-1.chipstack.bankroll {
+                left: 15px;
+                top: 300px;
+            }
+            .player-2.chipstack.bankroll {
+                left: 15px;
+                top: 400px;
+            }
+            .player-3.chipstack.bankroll {
+                left: 350px;
+                top: 650px;
+            }
+            .player-4.chipstack.bankroll {
+                left: 500px;
+                top: 650px;
+            }
+            .player-5.chipstack.bankroll {
+                left: 650px;
+                top: 650px;
+            }
+            .player-6.chipstack.bankroll {
+                left: 800px;
+                top: 650px;
+            }
+            .chipstack.pass.player-1 {
+                left: 90px;
+                top: 300px;
+            }
+            .chipstack.pass.player-2 {
+                left: 90px;
+                top: 400px;
+            }
+            .chipstack.pass.player-3 {
+                left: 350px;
+                top: 565px;
+            }
+            .chipstack.pass.player-4 {
+                left: 500px;
+                top: 565px;
+            }
+            .chipstack.pass.player-5 {
+                left: 650px;
+                top: 565px;
+            }
+            .chipstack.pass.player-6 {
+                left: 800px;
+                top: 565px;
+            }
+            .chipstack.dontpass.player-1 {
+                left: 165px;
+                top: 300px;
+            }
+            .chipstack.dontpass.player-2 {
+                left: 165px;
+                top: 400px;
+            }
+            .chipstack.dontpass.player-3 {
+                left: 350px;
+                top: 497px;
+            }
+            .chipstack.dontpass.player-4 {
+                left: 500px;
+                top: 497px;
+            }
+            .chipstack.dontpass.player-5 {
+                left: 650px;
+                top: 497px;
+            }
+            .chipstack.dontpass.player-6 {
+                left: 800px;
+                top: 497px;
+            }
+            .number-box {
+                position: absolute;
+                border: 1px solid black;
+                top: 96px;
+                width: 116px;
+                height: 190px;
+            }
+            .number-box.dontcome {
+                left: 221px;
+                width: 104px;
+            }
+            .number-4 {
+                left: 325px;
+            }
+            .number-5 {
+                left: 441px;
+            }
+            .number-6 {
+                left: 557px;
+            }
+            .number-8 {
+                left: 673px;
+            }
+            .number-9 {
+                left: 789px;
+                width: 112px;
+            }
+            .number-10 {
+                left: 901px;
+                width: 124px;
+            }
+
+            .chipstack.place.player-1 {
+                top: 45;
+                right: 0;
+                z-index: 3;
+            }
+            .chipstack.place.player-2 {
+                top: 45;
+                right: 30;
+                z-index: 3;
+            }
+            .chipstack.place.player-3 {
+                top: 45;
+                right: 60;
+                z-index: 3;
+            }
+            .chipstack.place.player-4 {
+                bottom: 0;
+                right: 0;
+                z-index: 6;
+            }
+            .chipstack.place.player-5 {
+                bottom: 0;
+                right: 30;
+                z-index: 6;
+            }
+            .chipstack.place.player-6 {
+                bottom: 0;
+                right: 60;
+                z-index: 6;
+            }
+            .chipstack.dontcome.player-1 {
+                top: -15;
+                right: 0;
+                z-index: 1;
+            }
+            .chipstack.dontcome.player-2 {
+                top: -15;
+                right: 30;
+                z-index: 1;
+            }
+            .chipstack.dontcome.player-3 {
+                top: -15;
+                right: 60;
+                z-index: 1;
+            }
+            .chipstack.dontcome.player-4 {
+                top: 15;
+                right: 0;
+                z-index: 2;
+            }
+            .chipstack.dontcome.player-5 {
+                top: 15;
+                right: 30;
+                z-index: 2;
+            }
+            .chipstack.dontcome.player-6 {
+                top: 15;
+                right: 60;
+                z-index: 2;
+            }
+            .chipstack.come.player-1 {
+                top: 80;
+                right: 0;
+                z-index: 4;
+            }
+            .chipstack.come.player-2 {
+                top: 80;
+                right: 30;
+                z-index: 4;
+            }
+            .chipstack.come.player-3 {
+                top: 80;
+                right: 60;
+                z-index: 4;
+            }
+            .chipstack.come.player-4 {
+                top: 115;
+                right: 0;
+                z-index: 5;
+            }
+            .chipstack.come.player-5 {
+                top: 115;
+                right: 30;
+                z-index: 5;
+            }
+            .chipstack.come.player-6 {
+                top: 115;
+                right: 60;
+                z-index: 5;
+            }
+        </style>
+        <div class="table">
+            <div class="number-box dontcome"></div>
+            <div class="number-box number-4"></div>
+            <div class="number-box number-5"></div>
+            <div class="number-box number-6"></div>
+            <div class="number-box number-8"></div>
+            <div class="number-box number-9"></div>
+            <div class="number-box number-10"></div>
+        </div>
+
+        <script>
+            const tableEl = document.querySelector('.table');
+            function makeBet(type, player, amount) {
+                let el = document.createElement('div');
+                el.classList.add(type);
+                el.classList.add('chipstack');
+                el.classList.add('player-' + player);
+                tableEl.appendChild(el);
+                makeStack(el, amount);
+            }
+            function makeBankRoll(player, amount) {
+                let el = document.createElement('div');
+                el.classList.add('bankroll');
+                el.classList.add('chipstack');
+                el.classList.add('player-' + player);
+                tableEl.appendChild(el);
+                makeStack(el, amount);
+            }
+            function makeNumberBet(number, type, player, amount) {
+                let el = document.createElement('div');
+                el.classList.add(type);
+                el.classList.add('chipstack');
+                el.classList.add('player-' + player);
+                document.querySelector('.number-box.number-' + number).appendChild(el);
+                makeStack(el, amount);
+            }
+            function makePassBet(player, amount) {
+                let el = document.createElement('div');
+                el.classList.add('pass');
+                el.classList.add('chipstack');
+                el.classList.add('player-' + player);
+                tableEl.appendChild(el);
+                makeStack(el, amount);
+            }
+
+            function makeDontPassBet(player, amount) {
+                let el = document.createElement('div');
+                el.classList.add('dontpass');
+                el.classList.add('chipstack');
+                el.classList.add('player-' + player);
+                tableEl.appendChild(el);
+                makeStack(el, amount);
+            }
+            function makeStack(parentEl, amount) {
+                parentEl.innerHTML = '';
+                let total = amount;
+                let count = 0;
+                let chip, color;
+                [500, 100, 25, 5, 1].forEach(n=> {
+                    while (total >= n) {
+                        chip = document.createElement('div');
+                        parentEl.appendChild(chip);
+                        chip.classList.add('chip');
+                        let backgroundColor, shadowColor;
+                        color = 'white';
+                        switch (n) {
+                            case 500:
+                                backgroundColor = 'rgb(238, 130, 238)';
+                                shadowColor = 'rgb(202 , 28, 202)';
+                                break;
+                            case 100:
+                                backgroundColor = 'rgb(72, 72, 72)';
+                                shadowColor = 'rgb(24 , 24, 24)';
+                                break;
+                            case 25:
+                                backgroundColor = 'rgb(0, 153, 51)';
+                                shadowColor = 'rgb(0 , 77, 26)';
+                                break;
+                            case 5:
+                                backgroundColor = 'rgb(255, 51, 51)';
+                                shadowColor = 'rgb(204, 0, 0)';
+                                break;
+                            case 1:
+                                backgroundColor = 'rgb(255, 255, 255)';
+                                shadowColor = 'rgb(204 , 204, 204)';
+                                color = 'black;'
+                                break;
+                        }
+                        total -= n;
+                        chip.style.setProperty('--box-shadow-color', shadowColor);
+                        chip.style.background = backgroundColor;
+                        chip.style.bottom = (3 + 4 * (count++)) + 'px';
+                    }
+                })
+
+                chip.innerText = amount;
+                chip.style.color = color;
+            
+            }
+            for (let player = 1; player <7; player++) {
+                [4,5,6,8,9,10].forEach(number=>{
+                    makeNumberBet(number, 'dontcome', player, Math.floor(Math.random() * 45) + 1);
+                    makeNumberBet(number, 'place', player, Math.floor(Math.random() * 45) + 1);
+                    makeNumberBet(number, 'come', player, Math.floor(Math.random() * 45) + 1);
+                });
+                makeBet('bankroll', player, Math.floor(Math.random() * 1000) + 1);
+                makeBet('pass', player, Math.floor(Math.random() * 45) + 1);
+                makeBet('dontpass', player, Math.floor(Math.random() * 45) + 1);
+                makeBet('dontcome', player, Math.floor(Math.random() * 45) + 1);
+
+            }
+        </script>
+    </body>
+</html>
