@@ -32,6 +32,7 @@ class Player {
         this.name = name;
         this.betsOnTable = [];
         this.totalBetAmount = 0;
+        this.startingBankroll = bankroll;
     }
 
     bet(bet) {
@@ -242,7 +243,7 @@ class Table {
         this.strategyInfo[player] = null;
     }
 
-    run(maxRolls, maxShooters=Infinity, verbose=true, runout=false) {
+    run(maxRolls, maxShooters=Infinity, verbose=true) {
     /**
      *  Runs the craps table until a stopping condition is met.
 
@@ -252,8 +253,6 @@ class Table {
             Maximum number of rolls to run for
         verbose : bool
             If true, print results from table during each roll
-        runout : bool
-            If true, continue past maxRolls until player has no more bets on the table
      *  
      */        
         if (verbose)
@@ -298,22 +297,12 @@ class Table {
             }
 
             // evaluate the stopping condition
-            if (runout) {
-                continueRolling = (
-                    this.dice.numberOfRolls < maxRolls
-                    && this.numberOfShooters <= maxShooters
-                    && this.totalPlayerCash > 0
-                ) || this.playerHasBets;
-            } else {
-                continueRolling = (
-                    this.dice.numberOfRolls < maxRolls
-                    && this.numberOfShooters <= maxShooters
-                    && this.totalPlayerCash > 0
-                )
-            }
+            continueRolling =
+                this.numberOfShooters <= maxShooters
+                && this.totalPlayerCash > 0;
         }
         if (verbose) {
-            log("Roll Distribution:" +  this.rollDistribution);
+            log("Roll Distribution:" +  this.rollDistribution.splice(2));
         }
     };
 
@@ -1061,6 +1050,11 @@ function pass_2come(player, table, unit=5, strat_info=null) {
     }
 }
 
+function pass_dontpass(player, table, unit=5, strat_info=null) {
+    passline(player, table, unit);
+    dontpass(player, table, unit);
+}
+
 function mike_harris(player, table, unit=5, strat_info=null) {
     // dont pass bet with max odds laid
     dontpass_odds(player, table, unit=unit, strat_info, win_mult="345")
@@ -1085,7 +1079,7 @@ function mike_harris(player, table, unit=5, strat_info=null) {
         });
         // If point is hard way, bet that hard way
         if (table.point % 2 == 0 && !player.getBet("Hard", table.point)) {
-            player.bet("Hard", table.point);
+            player.bet(new Hard(table.point, unit));
         }
 
         // If at least 3 come bets are established, or 2 come bets and one of them is on 4 or 10, hop the sevens
@@ -1096,6 +1090,67 @@ function mike_harris(player, table, unit=5, strat_info=null) {
         } else if (comeBetCount > 1 && (player.getBet("Come", 4) || player.getBet("Come", 10))) {
             hopAmount = Math.ceil(unit/3) + comeBetCount - 2;
         }
+
+        if (hopAmount > 0) {
+            player.bet(new Hop("16", hopAmount));
+            player.bet(new Hop("25", hopAmount));
+            player.bet(new Hop("34", hopAmount));
+        }
+
+        // Add a come bet every roll
+        player.bet(new Come(unit));
+
+
+    }
+}
+
+function mike_harris_15(player, table, unit=5, strat_info=null) {
+    if (player.startingBankroll * 1.5 < player.bankroll)
+        return;
+    unit = 15;
+    // dont pass bet with max odds laid
+    dontpass_odds(player, table, unit=unit, strat_info, win_mult="345")
+
+    if (table.hasPoint()) {
+        // Odds on any come bet that has established a point
+        this.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
+            if (!player.getBet("Odds", b.subname)) {
+                let oddsAmount = unit;
+                if (["4", "10"].indexOf(b.subname) > -1) {
+                    oddsAmount = 45;
+                } else if (["6", "8"].indexOf(b.subname) > -1) {
+                    oddsAmount = 35;
+                } else {
+                    oddsAmount = 30;
+                }
+                player.bet(new Odds(oddsAmount, b));
+            }
+        });
+        // place inside numbers (unless come bet exists on that number)
+        [5, 9].forEach(n=>{
+            if (!player.getBet("Odds", n) && !player.getBet("Place", n)) {
+                player.bet(new Place(20, n));
+            }
+        });
+        [6, 8].forEach(n=>{
+            if (!player.getBet("Odds", n) && !player.getBet("Place", n)) {
+                player.bet(new Place(24, n));
+            }
+        });
+        [4, 10].forEach(n=>{
+            if (!player.getBet("Odds", n) && !player.getBet("Buy", n)) {
+                player.bet(new Buy(20, n));
+            }
+        });
+        // If point is hard way, bet that hard way
+        if (table.point % 2 == 0 && !player.getBet("Hard", table.point)) {
+            player.bet(new Hard(table.point, 16));
+        }
+
+        // Count up the odds bets (which in this strategy are the Come bets)
+        let oddsAtRisk = 0;
+        player.betsOnTable.filter(b=>b.name == 'Odds').forEach(b=>oddsAtRisk += b.betAmount);
+        let hopAmount = parseInt(oddsAtRisk/15) - 3;
 
         if (hopAmount > 0) {
             player.bet(new Hop("16", hopAmount));
