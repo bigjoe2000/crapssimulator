@@ -111,6 +111,7 @@
 
             // Summarized will be dict of strategy names with values of dicts of ending backroll to number of times that occurred
             let summarized = {};
+            let totals = {};
             let max = -1;
             let min = Number.MAX_SAFE_INTEGER;
             Object.keys(output).forEach(k=>{
@@ -118,16 +119,19 @@
                 console.log('summarizing:' + k);
                 summarized[k] = {};
                 output[k].forEach(array=>{
-                    let winAmount = parseInt(array[1]);
+                    let winAmount = parseInt(array[1]) - parseInt(array[2]);
                     console.log('array:' + array);
                     summarized[k][winAmount] = summarized[k][winAmount] || 0;
                     summarized[k][winAmount] += 1;
+                    totals[k] = (totals[k] || 0) + winAmount;
                     max = Math.max(max, winAmount);
                     min = Math.min(min, winAmount);
                 })
             })
 
+            Object.keys(totals).forEach(k=>console.log(totals[k] / config.numberOfRuns));
             console.log(summarized);
+
             for (let i = min; i <= max; i++) {
                 let row = [i];
                 Object.keys(output).forEach(k=>{

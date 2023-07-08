@@ -52,12 +52,16 @@ class Player {
         }
     }
 
+    hasBet(bet) {
+        return this.betsOnTable.indexOf(bet) > -1;
+    }
+
     getBet(name, subname='') {
         /* returns first betting object matching name and bet_subname.
         If bet_subname="Any", returns first betting object matching name */
         return this.betsOnTable.find(bet=>bet.name == name && (bet.subname == subname || bet.subname == 'Any'));
     }
-
+    
     /*  returns the total number of bets in this.betsOnTable that match bets_to_check  */
     countBets(name) {
         return this.betsOnTable.filter(b=>b.name == name).length;
@@ -214,12 +218,15 @@ class Table {
         this.passRolls = 0;
         this.lastRoll = null;
         this.numberOfShooters = 1;
+        this.shooterNaturals = 0;
+        this.shooterPoints = 0;
+        this.rollDistribution = Array(13).fill(0);
     }
 
     static POINTS = [4, 5, 6, 8, 9, 10];
 
     hasPoint() {
-        return this.point;
+        return this.point > 0;
     }
 
     setPayouts(name, value) {
@@ -278,8 +285,9 @@ class Table {
             }
 
             this.dice.roll();
+            this.rollDistribution[this.dice.total] += 1;
             if (verbose) {
-                log("Dice out!", !this.hasPoint() ? " -- Come out roll" : "");
+                log("Dice out!" + (!this.hasPoint() ? " -- Come out roll" : ""));
                 log(`Shooter rolled ${this.dice.total} ${this.dice.result}`);
             }
             this.updatePlayerBets(this.dice, verbose);
@@ -303,6 +311,9 @@ class Table {
                     && this.totalPlayerCash > 0
                 )
             }
+        }
+        if (verbose) {
+            log("Roll Distribution:" +  this.rollDistribution);
         }
     };
 
@@ -335,14 +346,21 @@ class Table {
          * update table attributes based on previous dice roll
          */
         this.passRolls += 1
-        if (this.hasPoint() && dice.total == 7)
-            this.numberOfShooters += 1;
-        if (this.hasPoint() && (dice.total == 7 || dice.total == this.point))
-            this.passRolls = 0;
+        if (this.hasPoint()) {
+            if (dice.total == 7) {
+                this.numberOfShooters += 1;
+                this.shooterNaturals = 0;
+                this.shooterPoints = 0;            
+                this.passRolls = 0;
+            } else if (dice.total == this.point) {
+                this.shooterPoints += 1;
+                this.passRolls = 0;
+            }
+        }
 
-        if (this.point && [7, this.point].includes(dice.total)) {
+        if (this.hasPoint() && [7, this.point].includes(dice.total)) {
             this.point = null;
-        } else if (!this.point && Table.POINTS.includes(dice.total)) {
+        } else if (!this.hasPoint() && Table.POINTS.includes(dice.total)) {
             this.point = dice.total;
         }
 
