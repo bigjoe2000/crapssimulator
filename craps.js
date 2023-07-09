@@ -484,10 +484,11 @@ class Bet {
         }
         if (this.winning_numbers.includes(dice.total)) {
             status = 'win';
-            win_amount = this.payoutratio * this.betAmount;
+            let commissionAmount = 0;
             if (this.commission > 0) {
-                win_amount -= Math.max(Math.floor(this.betAmount * this.commission), 1);
+                commissionAmount = Math.max(Math.floor(this.betAmount * this.commission), 1);
             }
+            win_amount = this.payoutratio * (this.betAmount - commissionAmount);
         } else if (this.losing_numbers.includes(dice.total)) {
             status = 'lose';
         }
@@ -573,11 +574,11 @@ class Buy extends Bet {
         this.losing_numbers = [7];
         this.offOnComeOut = true;
     
-        if (this.winning_numbers == [4] || this.winning_numbers == [10]) {
+        if (number == 4 || number == 10) {
             this.payoutratio = 2 / 1;
-        } else if (this.winning_numbers == [5] || this.winning_numbers == [9]) {
+        } else if (number == 5 || number == 9) {
             this.payoutratio = 3 / 2;
-        } else if (this.winning_numbers == [6] || this.winning_numbers == [8]) {
+        } else if (number == 6 || number == 8) {
             this.payoutratio = 6 / 5;
         }
     }
@@ -1139,7 +1140,7 @@ function mike_harris_15(player, table, unit=5, strat_info=null) {
         });
         [4, 10].forEach(n=>{
             if (!player.getBet("Odds", n) && !player.getBet("Buy", n)) {
-                player.bet(new Buy(20, n));
+                player.bet(new Buy(21, n));
             }
         });
         // If point is hard way, bet that hard way
