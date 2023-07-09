@@ -79,7 +79,7 @@ class Player {
 
     addStrategyBets(table, unit, info) {
         /*  Implement the given betting strategy  */
-        return this.bettingStrategy(this, table, unit, info);
+        return this.bettingStrategy.update(this, table, unit, info);
     }
 
     updateBets(table, dice, verbose=false) {
@@ -269,7 +269,7 @@ class Table {
 
         // maybe wrap this into update table or something
         this.totalPlayerCash = 0;
-        this.players.forEach(p=>this.totalPlayerCash += p.totalBetAmount + p.bankroll);
+        this.players.forEach(p=>this.totalPlayerCash += parseInt(p.totalBetAmount) + parseInt(p.bankroll));
 
         let continueRolling = true;
         while (continueRolling) {
@@ -279,7 +279,11 @@ class Table {
             if (verbose) {
                 log("*** Preparing for next roll.. adding player bets");
                 this.players.forEach(p=>{
-                    log("Player:" + p.name + ' Bankroll:' + p.bankroll + ' Bets:' + p.betsOnTable.sort((a,b)=>(a.subname + a.name).localeCompare(b.subname + b.name)).map(b=>`${b.name}${b.subname}:${b.betAmount}`).join(' '));
+                    let totalBetsOnTable = 0;
+                    p.betsOnTable.forEach(b=>totalBetsOnTable += b.betAmount);
+                    log("Player:" + p.name + ' Bankroll:' + p.bankroll 
+                    + ' Bets:' + p.betsOnTable.sort((a,b)=>(a.subname + a.name).localeCompare(b.subname + b.name)).map(b=>`${b.name}${b.subname}:${b.betAmount}`).join(' ')
+                    + ' Total Bets:' + totalBetsOnTable);
                 });
             }
 
@@ -302,6 +306,7 @@ class Table {
                 && this.totalPlayerCash > 0;
         }
         if (verbose) {
+            log("Player ending bankrolls: " + this.players.map(p=>p.name + ':' + p.bankroll + ' ').join(' '))
             log("Roll Distribution:" +  this.rollDistribution.splice(2));
         }
     };
@@ -861,7 +866,7 @@ class Simulation {
     printout() {
         let table = new Table();
         this.strategies.forEach(s=>{
-            table.addPlayer(new Player(this.bankroll, s, s.name));
+            table.addPlayer(new Player(this.bankroll, new s(), s.name));
         })
         table.run(this.maxRolls, this.maxShooters);
     }
@@ -871,7 +876,7 @@ class Simulation {
         for (let i = 0; i < this.numOfRuns; i++) {
             let table = new Table();
             this.strategies.forEach(s=>{
-                table.addPlayer(new Player(this.bankroll, s, s.name));
+                table.addPlayer(new Player(this.bankroll, new s(), s.name));
             })
             table.run(this.maxRolls, this.maxShooters, false);
             table.players.forEach(player=>{
@@ -884,302 +889,388 @@ class Simulation {
     }
 }
 
+class Strategy {
+    info = {};
+    unit = 5;
+    maxRolls = 0; // 0 for no limit
+    maxShooters = 0; // 0 for no limit
+    maxBankroll = 0; // 0 for no limit
+    stopped = false;
+    strategyBets = [];
+
+    isStopped() {
+        return this.stopped;
+    }
+
+    shouldStop(table, player) {
+        if (player.bankroll < this.unit) {
+            stopped = true;
+        }
+        if (this.maxBankRoll > 0 && player.bankroll > this.maxBankroll) {
+            stopped = true;
+        }
+        if (table.numberOfRolls >= this.maxRolls) {
+            stopped = true;
+        }
+        if (table.numberOfShooters >= this.maxShooters) {
+            stopped = true;
+        }
+        return this.isStopped();
+    }
+
+    update(player, table, unit, strat_info) {
+        if (this.isStopped()) {
+            return;
+        }
+        this.strategyBets.forEach(b=>b.update(table, player));
+    }
+
+    addBet(strategyBet) {
+        this.strategyBets.push(strategyBet);
+    }
+
+}
 
 
-        // results = pd.DataFrame(results, columns = ['sim', 'final', 'initial', 'n_rolls'])
-        // results['winnings'] = results['final'] - results['initial']
-        // p = (
-        //     ggplot(results, aes(x='winnings')) + 
-        //     geom_vline(xintercept = 0, color = 'grey') + 
-        //     geom_density() +
-        //     theme_classic() + 
-        //     labs(x = "Winnings", y = "Relative chance of outcome", title = "Bankroll:" + str(self.bankroll) + " Sims:" + str(self.num_of_runs) + " MaxShooter:" + str(self.max_shooters) + " MaxRolls:" + str(self.max_rolls))
-        // )
-        // ggsave(plot = p, filename = sim_name, path = "./output/simulations/")
-        // # print("Sum of output density",sum(output_density.values()))
-        // # print("Max of output density",max(output_density.values()))
-        // # print("Min of output density keys",min(output_density.keys()))
-        // # print("Max of output density keys",max(output_density.keys()))
-        // # print(output_density)
-        // return output_density
 
-
-function passline(player, table, unit=5, strat_info=null) {
-    if (!table.hasPoint() && !player.getBet("PassLine"))
+class passline extends Strategy {
+    update(player, table, unit, strat_info) {
+        if (!table.hasPoint() && !player.getBet("PassLine"))
         player.bet(new PassLine(unit));
-}
-
-function passline_odds(player, table, unit=5, strat_info=null, win_mult=1) {
-    passline(player, table, unit);
-    if (!table.hasPoint())
-        return;
-    let passlineBet = player.getBet("PassLine");
-    if (!passlineBet)
-        return;
-    if (player.getBet("Odds", table.point))
-        return;
-    player.bet(new Odds(calculateOddsBet(table.point, unit=unit, win_mult=win_mult), passlineBet));
-}
-function passline_maxodds(player, table, unit=5, strat_info=null) {
-    passline_odds(player, table, unit, strat_info, '345') 
-}
-
-function dontpass(player, table, unit=5, strat_info=null) {
-    // Don't pass bet
-    if (!table.hasPoint() && ! player.getBet("DontPass"))
-        player.bet(new DontPass(unit))
-}
-
-function dontpass_odds(player, table, unit=5, strat_info=null, win_mult=1) {
-    // Assume that someone tries to win the `win_mult` times the unit on each bet, which corresponds
-    // well to the max_odds on a table.
-    // For `win_mult` = "345", this assumes max of 3-4-5x odds
-    dontpass(player, table, unit);
-
-    if (table.hasPoint()) {
-        let dontPassBet = player.getBet("DontPass");
-        if (dontPassBet && !player.getBet("LayOdds", table.point)) {
-            player.bet(new LayOdds(calculateLayOddsBet(table.point, unit=unit, win_mult=win_mult), dontPassBet));
-        }
     }
 }
 
-function place5689(player, table, unit=5, strat_info=null) {
-    if (!table.hasPoint())
-        return;
-
-    [5, 6, 8, 9].forEach(n=>{
-        if (player.getBet("Place", n))
+class passline_odds extends Strategy {
+    constructor(win_mult=1) {
+        super();
+        this.win_mult = win_mult;
+        this.passlineStrategy = new passline();
+    }
+    update(player, table, unit=5, strat_info=null) {
+        this.passlineStrategy.update(player, table, unit);
+        if (!table.hasPoint())
             return;
-        player.bet(new Place(calculatePlaceBet(n, unit), n));
-    })
-}
-
-function ironcross(player, table, unit=5, strat_info=null) {
-    passline(player, table, unit);
-    passline_odds(player, table, unit, strat_info=null, win_mult=2);
-
-    [5, 6, 8].forEach(n=>{
-        if (player.getBet("Place", n))
+        let passlineBet = player.getBet("PassLine");
+        if (!passlineBet)
             return;
-        player.bet(new Place(calculatePlaceBet(n, unit * 2), n));
-    });
-
-    if (table.hasPoint() && !player.getBet("Field")) {
-        player.bet(new Field(unit));
+        if (player.getBet("Odds", table.point))
+            return;
+        player.bet(new Odds(calculateOddsBet(table.point, unit=unit, this.win_mult), passlineBet));
     }
 }
 
-function hammerlock(player, table, unit=5, strat_info=null) {
-    passline(player, table, unit);
-    dontpass_odds(player, table, unit, win_mult="345");
-
-    if (!strat_info || !table.hasPoint()) {
-        strat_info = {"mode": "place68"};
-        player.remove("Place");
+class passline_maxodds extends Strategy {
+    passlineOddsStrategy = new passline_odds('345');
+    update(player, table, unit=5, strat_info=null) {
+        this.passlineOddsStrategy.update(player, table, unit, strat_info);
     }
+}
 
-    let placesCount = player.countBets("Place");
-    if (strat_info.mode == "place68") {
-        // We have place bets up, but not all, so one of them won
-        if (table.hasPoint() && placesCount > 0 && placesCount < 2) {
+class dontpass extends Strategy {
+    update(player, table, unit=5, strat_info=null) {
+        // Don't pass bet
+        if (!table.hasPoint() && ! player.getBet("DontPass"))
+            player.bet(new DontPass(unit));
+    }
+}
+
+class dontpass_odds extends Strategy {
+    constructor(win_mult=1) {
+        super()
+        this.win_mult = win_mult;
+        this.dontpassStrategy = new dontpass();
+    }
+    update(player, table, unit=5, strat_info=null) {
+        // Assume that someone tries to win the `win_mult` times the unit on each bet, which corresponds
+        // well to the max_odds on a table.
+        // For `win_mult` = "345", this assumes max of 3-4-5x odds
+        this.dontpassStrategy.update(player, table, unit);
+
+        if (table.hasPoint()) {
+            let dontPassBet = player.getBet("DontPass");
+            if (dontPassBet && !player.getBet("LayOdds", table.point)) {
+                player.bet(new LayOdds(calculateLayOddsBet(table.point, unit, this.win_mult), dontPassBet));
+            }
+        }
+    }
+}
+
+class place5689 extends Strategy {
+    update(player, table, unit=5, strat_info=null) {
+        if (!table.hasPoint())
+            return;
+
+        [5, 6, 8, 9].forEach(n=>{
+            if (player.getBet("Place", n))
+                return;
+            player.bet(new Place(calculatePlaceBet(n, unit), n));
+        });
+    }
+}
+
+class ironcross extends Strategy {
+    passStrategy = new passline();
+    passOddsStrategy = new passline_odds(2);
+
+    update(player, table, unit=5, strat_info=null) {
+        this.passStrategy.update(player, table, unit);
+        this.passOddsStrategy.update(player, table, unit, strat_info=null);
+
+        [5, 6, 8].forEach(n=>{
+            if (player.getBet("Place", n))
+                return;
+            player.bet(new Place(calculatePlaceBet(n, unit * 2), n));
+        });
+
+        if (table.hasPoint() && !player.getBet("Field")) {
+            player.bet(new Field(unit));
+        }
+    }
+}
+
+class hammerlock extends Strategy {
+    passStrategy = new passline();
+    dontPassStrategy = new dontpass_odds('345');
+
+
+    update(player, table, unit=5, strat_info=null) {
+        this.passStrategy.update(player, table, unit);
+        this.dontPassStrategy.update(player, table, unit);
+
+        if (!strat_info || !table.hasPoint()) {
+            strat_info = {"mode": "place68"};
             player.remove("Place");
-            strat_info.mode = "place_inside";
-            [5, 6, 8, 9].forEach(n=>{
-                if (player.getBet("Place", n)) {
-                    return;
-                }
-                player.bet(new Place(calculatePlaceBet(n, unit), n));
-            });
-        } else {
-            [6, 8].forEach(n=>{
-                if (player.getBet("Place", n)) {
-                    return;
-                }
-                player.bet(new Place(calculatePlaceBet(n, unit * 2), n));
-            });
         }
-    } else if (strat_info.mode == "place_inside") {
-        if (table.hasPoint() && placesCount > 0 && placesCount < 4) {
-            // one of our place bets won. Take them all down
-            player.remove("Place");
-            strat_info.mode = "takedown";
-        } else {
-            [5, 6, 8, 9].forEach(n=>{
-                if (player.getBet("Place", n)) {
-                    return;
-                }
-                player.bet(new Place(calculatePlaceBet(n, unit * 2), n));
-            });
+
+        let placesCount = player.countBets("Place");
+        if (strat_info.mode == "place68") {
+            // We have place bets up, but not all, so one of them won
+            if (table.hasPoint() && placesCount > 0 && placesCount < 2) {
+                player.remove("Place");
+                strat_info.mode = "place_inside";
+                [5, 6, 8, 9].forEach(n=>{
+                    if (player.getBet("Place", n)) {
+                        return;
+                    }
+                    player.bet(new Place(calculatePlaceBet(n, unit), n));
+                });
+            } else {
+                [6, 8].forEach(n=>{
+                    if (player.getBet("Place", n)) {
+                        return;
+                    }
+                    player.bet(new Place(calculatePlaceBet(n, unit * 2), n));
+                });
+            }
+        } else if (strat_info.mode == "place_inside") {
+            if (table.hasPoint() && placesCount > 0 && placesCount < 4) {
+                // one of our place bets won. Take them all down
+                player.remove("Place");
+                strat_info.mode = "takedown";
+            } else {
+                [5, 6, 8, 9].forEach(n=>{
+                    if (player.getBet("Place", n)) {
+                        return;
+                    }
+                    player.bet(new Place(calculatePlaceBet(n, unit * 2), n));
+                });
+            }
+        } else if (strat_info.mode == "takedown" && !table.hasPoint()) {
+            strat_info = null;
         }
-    } else if (strat_info.mode == "takedown" && !table.hasPoint()) {
-        strat_info = null;
-    }
 
-    return strat_info;
-}
-
-function buy_4_10(player, table, unit=5, strat_info=null) {
-    if (!table.hasPoint()) {
-        return;
-    }
-    [4, 10].forEach(n=>{
-        if (!player.getBet('Buy', n)) {
-            player.bet(new Buy(unit, n));
-        }
-    });
-}
-
-function hardways(player, table, unit=5, strat_info=null) {
-    [4, 6, 8, 10].forEach(n=>{
-        if (!player.getBet("Hard", n)) {
-            player.bet(new Hard(n, unit));
-        }        
-    });
-}
-
-function pass_dontpass_horn12(player, table, unit=5, strat_info=null) {
-    passline(player, table, unit);
-    dontpass(player, table, unit);
-
-    let mult = table.dice.total == 12 ? 10 : 1;
-    player.bet(new Horn12(unit * mult));
-}
-
-function pass_2come(player, table, unit=5, strat_info=null) {
-    passline_odds(player, table, unit);
-    this.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
-        if (!player.getBet("Odds", b.subname)) {
-            player.bet(new Odds(unit, b));
-        }
-     });
-     if (table.hasPoint() && player.countBets("Come") < 2) {
-        player.bet(new Come(unit));
+        return strat_info;
     }
 }
 
-function pass_dontpass(player, table, unit=5, strat_info=null) {
-    passline(player, table, unit);
-    dontpass(player, table, unit);
+class buy_4_10 extends Strategy {
+    update(player, table, unit=5, strat_info=null) {
+        if (!table.hasPoint()) {
+            return;
+        }
+        [4, 10].forEach(n=>{
+            if (!player.getBet('Buy', n)) {
+                player.bet(new Buy(unit, n));
+            }
+        });
+    }
 }
 
-function mike_harris(player, table, unit=5, strat_info=null) {
-    // dont pass bet with max odds laid
-    dontpass_odds(player, table, unit=unit, strat_info, win_mult="345")
+class hardways extends Strategy {
+    update(player, table, unit=5, strat_info=null) {
+        [4, 6, 8, 10].forEach(n=>{
+            if (!player.getBet("Hard", n)) {
+                player.bet(new Hard(n, unit));
+            }        
+        });
+    }
+}
 
-    if (table.hasPoint()) {
-        // Odds on any come bet that has established a point
-        this.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
+class pass_dontpass_horn12 extends Strategy {
+    passStrategy = new passline();
+    dontStrategy = new dontpass();
+    update(player, table, unit=5, strat_info=null) {
+        this.passStrategy.update(player, table, unit);
+        this.dontStrategy.update(player, table, unit);
+
+        let mult = table.dice.total == 12 ? 10 : 1;
+        player.bet(new Horn12(unit * mult));
+    }
+}
+
+class pass_2come extends Strategy {
+    passOddsStrategy = new passline_odds();
+    update(player, table, unit=5, strat_info=null) {
+        this.passOddsStrategy.update(player, table, unit);
+        player.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
             if (!player.getBet("Odds", b.subname)) {
                 player.bet(new Odds(unit, b));
             }
         });
-        // place inside numbers (unless come bet exists on that number)
-        [5, 6, 8, 9].forEach(n=>{
-            if (!player.getBet("Odds", n) && !player.getBet("Place", n)) {
-                player.bet(new Place(unit, n));
-            }
-        });
-        [4, 10].forEach(n=>{
-            if (!player.getBet("Odds", n) && !player.getBet("Buy", n)) {
-                player.bet(new Buy(unit, n));
-            }
-        });
-        // If point is hard way, bet that hard way
-        if (table.point % 2 == 0 && !player.getBet("Hard", table.point)) {
-            player.bet(new Hard(table.point, unit));
+        if (table.hasPoint() && player.countBets("Come") < 2) {
+            player.bet(new Come(unit));
         }
-
-        // If at least 3 come bets are established, or 2 come bets and one of them is on 4 or 10, hop the sevens
-        let comeBetCount = player.countBets("Come");
-        let hopAmount = 0;
-        if (comeBetCount > 2) {
-            hopAmount = Math.ceil(unit/3) + comeBetCount - 3;
-        } else if (comeBetCount > 1 && (player.getBet("Come", 4) || player.getBet("Come", 10))) {
-            hopAmount = Math.ceil(unit/3) + comeBetCount - 2;
-        }
-
-        if (hopAmount > 0) {
-            player.bet(new Hop("16", hopAmount));
-            player.bet(new Hop("25", hopAmount));
-            player.bet(new Hop("34", hopAmount));
-        }
-
-        // Add a come bet every roll
-        player.bet(new Come(unit));
-
-
     }
 }
 
-function mike_harris_15(player, table, unit=5, strat_info=null) {
-    if (player.startingBankroll * 1.5 < player.bankroll)
-        return;
-    unit = 15;
-    // dont pass bet with max odds laid
-    dontpass_odds(player, table, unit=unit, strat_info, win_mult="345")
+class pass_dontpass extends Strategy {
+    passStrategy = new passline();
+    dontStrategy = new dontpass();
+    update(player, table, unit=5, strat_info=null) {
+        this.passStrategy.update(player, table, unit);
+        this.dontStrategy.update(player, table, unit);
+    }
+}
 
-    if (table.hasPoint()) {
-        // Remove any place bets that are now on the point
-        let placePointBet = player.getBet("Place", table.point);
-        if (placePointBet) {
-            player.removeBetByObject(placePointBet);
-        }
-        // Remove any buy bets that are now on the point
-        let buyPointBet = player.getBet("Buy", table.point);
-        if (buyPointBet) {
-            player.removeBetByObject(buyPointBet);
-        }
-        // Odds on any come bet that has established a point
-        this.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
-            if (!player.getBet("Odds", b.subname)) {
-                let oddsAmount = unit;
-                if (["4", "10"].indexOf(b.subname) > -1) {
-                    oddsAmount = 45;
-                } else if (["6", "8"].indexOf(b.subname) > -1) {
-                    oddsAmount = 35;
-                } else {
-                    oddsAmount = 30;
+class mike_harris extends Strategy {
+    dontOddsStrategy = new dontpass_odds('345');
+    update(player, table, unit=5, strat_info=null) {
+        // dont pass bet with max odds laid
+        this.dontOddsStrategy.update(player, table, unit=unit, strat_info)
+
+        if (table.hasPoint()) {
+            // Odds on any come bet that has established a point
+            player.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
+                if (!player.getBet("Odds", b.subname)) {
+                    player.bet(new Odds(unit, b));
                 }
-                player.bet(new Odds(oddsAmount, b));
+            });
+            // place inside numbers (unless come bet exists on that number)
+            [5, 6, 8, 9].forEach(n=>{
+                if (!player.getBet("Odds", n) && !player.getBet("Place", n)) {
+                    player.bet(new Place(unit, n));
+                }
+            });
+            [4, 10].forEach(n=>{
+                if (!player.getBet("Odds", n) && !player.getBet("Buy", n)) {
+                    player.bet(new Buy(unit, n));
+                }
+            });
+            // If point is hard way, bet that hard way
+            if (table.point % 2 == 0 && !player.getBet("Hard", table.point)) {
+                player.bet(new Hard(table.point, unit));
             }
-        });
-        // place inside numbers (unless odds exists on that number)
-        [5, 9].forEach(n=>{
-            if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Place", n)) {
-                player.bet(new Place(20, n));
+
+            // If at least 3 come bets are established, or 2 come bets and one of them is on 4 or 10, hop the sevens
+            let comeBetCount = player.countBets("Come");
+            let hopAmount = 0;
+            if (comeBetCount > 2) {
+                hopAmount = Math.ceil(unit/3) + comeBetCount - 3;
+            } else if (comeBetCount > 1 && (player.getBet("Come", 4) || player.getBet("Come", 10))) {
+                hopAmount = Math.ceil(unit/3) + comeBetCount - 2;
             }
-        });
-        [6, 8].forEach(n=>{
-            if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Place", n)) {
-                player.bet(new Place(24, n));
+
+            if (hopAmount > 0) {
+                player.bet(new Hop("16", hopAmount));
+                player.bet(new Hop("25", hopAmount));
+                player.bet(new Hop("34", hopAmount));
             }
-        });
-        [4, 10].forEach(n=>{
-            if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Buy", n)) {
-                player.bet(new Buy(21, n));
-            }
-        });
-        // If point is hard way, bet that hard way
-        if (table.point % 2 == 0 && !player.getBet("Hard", table.point)) {
-            player.bet(new Hard(table.point, 16));
+
+            // Add a come bet every roll
+            player.bet(new Come(unit));
+
+
         }
+    }
+}
 
-        // Count up the odds bets (which in this strategy are the Come bets)
-        let oddsAtRisk = 0;
-        player.betsOnTable.filter(b=>b.name == 'Odds').forEach(b=>oddsAtRisk += b.betAmount);
-        let hopAmount = parseInt(oddsAtRisk/15) - 3;
-
-        if (hopAmount > 0) {
-            player.bet(new Hop("16", hopAmount));
-            player.bet(new Hop("25", hopAmount));
-            player.bet(new Hop("34", hopAmount));
+class mike_harris_15 extends Strategy {
+    dontOddsStrategy = new dontpass_odds('345');
+    update(player, table, unit=5, strat_info=null) {
+        let startingMultipier = 1.5;
+        // Uncomment to decrease ending bankroll with every shooter
+        // * (.9 ** table.numberOfShooters);
+        
+        if (player.startingBankroll * startingMultipier < player.bankroll) {
+            log("Strategy Mike Harris 15 stopping after " + table.numberOfShooters + " shooters because it hit:" + startingMultipier + " of starting bankroll");
+            return;
         }
+        unit = 15;
+        // dont pass bet with max odds laid
+        this.dontOddsStrategy.update(player, table, unit=unit, strat_info)
 
-        // Add a come bet every roll
-        player.bet(new Come(unit));
+        if (table.hasPoint()) {
+            // Remove any place bets that are now on the point
+            let placePointBet = player.getBet("Place", table.point);
+            if (placePointBet) {
+                player.removeBetByObject(placePointBet);
+            }
+            // Remove any buy bets that are now on the point
+            let buyPointBet = player.getBet("Buy", table.point);
+            if (buyPointBet) {
+                player.removeBetByObject(buyPointBet);
+            }
+            // Odds on any come bet that has established a point
+            player.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
+                if (!player.getBet("Odds", b.subname)) {
+                    let oddsAmount = unit;
+                    if (["4", "10"].indexOf(b.subname) > -1) {
+                        oddsAmount = 45;
+                    } else if (["6", "8"].indexOf(b.subname) > -1) {
+                        oddsAmount = 35;
+                    } else {
+                        oddsAmount = 30;
+                    }
+                    player.bet(new Odds(oddsAmount, b));
+                }
+            });
+            // place inside numbers (unless odds exists on that number)
+            [5, 9].forEach(n=>{
+                if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Place", n)) {
+                    player.bet(new Place(20, n));
+                }
+            });
+            [6, 8].forEach(n=>{
+                if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Place", n)) {
+                    player.bet(new Place(24, n));
+                }
+            });
+            [4, 10].forEach(n=>{
+                if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Buy", n)) {
+                    player.bet(new Buy(21, n));
+                }
+            });
+            // If point is hard way, bet that hard way
+            if (table.point % 2 == 0 && !player.getBet("Hard", table.point)) {
+                player.bet(new Hard(table.point, 16));
+            }
+
+            // Count up the odds bets (which in this strategy are the Come bets)
+            let oddsAtRisk = 0;
+            player.betsOnTable.filter(b=>b.name == 'Odds').forEach(b=>oddsAtRisk += b.betAmount);
+            let hopAmount = parseInt(oddsAtRisk/15) - 3;
+
+            if (hopAmount > 0) {
+                player.bet(new Hop("16", hopAmount));
+                player.bet(new Hop("25", hopAmount));
+                player.bet(new Hop("34", hopAmount));
+            }
+
+            // Add a come bet every roll
+            player.bet(new Come(unit));
 
 
+        }
     }
 }
 /**
@@ -1250,3 +1341,20 @@ if hop_the_seven:
 //     outputs.push(sim.run());
 // })
 // console.log(outputs);
+
+        // results = pd.DataFrame(results, columns = ['sim', 'final', 'initial', 'n_rolls'])
+        // results['winnings'] = results['final'] - results['initial']
+        // p = (
+        //     ggplot(results, aes(x='winnings')) + 
+        //     geom_vline(xintercept = 0, color = 'grey') + 
+        //     geom_density() +
+        //     theme_classic() + 
+        //     labs(x = "Winnings", y = "Relative chance of outcome", title = "Bankroll:" + str(self.bankroll) + " Sims:" + str(self.num_of_runs) + " MaxShooter:" + str(self.max_shooters) + " MaxRolls:" + str(self.max_rolls))
+        // )
+        // ggsave(plot = p, filename = sim_name, path = "./output/simulations/")
+        // # print("Sum of output density",sum(output_density.values()))
+        // # print("Max of output density",max(output_density.values()))
+        // # print("Min of output density keys",min(output_density.keys()))
+        // # print("Max of output density keys",max(output_density.keys()))
+        // # print(output_density)
+        // return output_density
