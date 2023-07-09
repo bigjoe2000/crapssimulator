@@ -202,11 +202,10 @@
                 rowEl.appendChild(document.createElement('td')).innerText = s;
                 rowEl.appendChild(document.createElement('td')).innerText = formatter.format(stats[s]['totals'] / config.numberOfRuns);
                 rowEl.appendChild(document.createElement('td')).innerText = stats[s]['winCounts'];
-                rowEl.appendChild(document.createElement('td')).innerText = formatter.format(stats[s]['winTotals'] / stats[s]['winCounts']);
+                rowEl.appendChild(document.createElement('td')).innerText = stats[s]['winCounts'] == 0 ? formatter.format(0) : formatter.format(stats[s]['winTotals'] / stats[s]['winCounts']);
                 rowEl.appendChild(document.createElement('td')).innerText = stats[s]['lossCounts'];
-                rowEl.appendChild(document.createElement('td')).innerText = formatter.format(stats[s]['lossTotals'] / stats[s]['lossCounts']);
+                rowEl.appendChild(document.createElement('td')).innerText = stats[s]['lossCounts'] == 0 ? formatter.format(0) : formatter.format(stats[s]['lossTotals'] / stats[s]['lossCounts']);
             })
-
 
             new google.visualization.LineChart(runEl.appendChild(document.createElement('div'), parentEl.firstChild)).draw(data, {
                 curveType: 'function',
