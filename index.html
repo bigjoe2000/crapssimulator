@@ -140,14 +140,13 @@
                 summarized[k] = {};
                 output[k].forEach(array=>{
                     let winAmount = parseInt(array[1]) - parseInt(array[2]);
-                    console.log('array:' + array);
                     summarized[k][winAmount] = summarized[k][winAmount] || 0;
                     summarized[k][winAmount] += 1;
                     stats[k]['totals'] += winAmount;
                     if (winAmount > 0) {
                         stats[k]['winCounts'] += 1;
                         stats[k]['winTotals'] += winAmount;
-                    } else {
+                    } else if (winAmount < 0) {
                         stats[k]['lossCounts'] += 1;
                         stats[k]['lossTotals'] += winAmount;
                     }
