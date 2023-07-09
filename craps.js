@@ -279,7 +279,7 @@ class Table {
             if (verbose) {
                 log("*** Preparing for next roll.. adding player bets");
                 this.players.forEach(p=>{
-                    log("Player:" + p.name + ' Bankroll:' + p.bankroll + ' Bets:' + p.betsOnTable.map(b=>`${b.name}${b.subname}:${b.betAmount}`).join(' '));
+                    log("Player:" + p.name + ' Bankroll:' + p.bankroll + ' Bets:' + p.betsOnTable.sort((a,b)=>(a.subname + a.name).localeCompare(b.subname + b.name)).map(b=>`${b.name}${b.subname}:${b.betAmount}`).join(' '));
                 });
             }
 
@@ -1124,6 +1124,11 @@ function mike_harris_15(player, table, unit=5, strat_info=null) {
         let placePointBet = player.getBet("Place", table.point);
         if (placePointBet) {
             player.removeBetByObject(placePointBet);
+        }
+        // Remove any buy bets that are now on the point
+        let buyPointBet = player.getBet("Buy", table.point);
+        if (buyPointBet) {
+            player.removeBetByObject(buyPointBet);
         }
         // Odds on any come bet that has established a point
         this.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
