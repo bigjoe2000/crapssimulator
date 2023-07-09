@@ -1196,16 +1196,19 @@ class mike_harris extends Strategy {
 
 class mike_harris_15 extends Strategy {
     dontOddsStrategy = new dontpass_odds('345');
-    update(player, table, unit=5, strat_info=null) {
-        let startingMultipier = 1.5 * (.95 ** table.numberOfShooters);
+    update(player, table, unit=5, strategyInfo=null) {
+        if (strategyInfo && strategyInfo['stopped'])
+            return strategyInfo;
+
+        let startingMultipier = 1 + 0.6 * (.95 ** table.numberOfShooters);
         
         if (player.startingBankroll * startingMultipier < player.bankroll) {
             log("Strategy Mike Harris 15 stopping after " + table.numberOfShooters + " shooters because it hit:" + startingMultipier + " of starting bankroll");
-            return;
+            return {stopped: true};
         }
         unit = 15;
         // dont pass bet with max odds laid
-        this.dontOddsStrategy.update(player, table, unit=unit, strat_info)
+        this.dontOddsStrategy.update(player, table, unit)
 
         if (table.hasPoint()) {
             // Remove any place bets that are now on the point
