@@ -472,8 +472,6 @@ class Bet {
     constructor(betAmount) {
         this.betAmount = betAmount;
     }
-    // def __eq__(other):
-    //     return this.name == other.name
 
     updateBet(table, dice) {
         let status = null;
@@ -561,6 +559,15 @@ class Odds extends Bet {
         } else if ([6,8].indexOf(this.winning_numbers[0]) > -1) {
             this.payoutratio = 6 / 5;
         }
+    }
+
+    updateBet(table, dice) {
+        if (this.offOnComeOut && !table.hasPoint() && (
+            this.winning_numbers.includes(dice.total) || this.losing_numbers.includes(dice.total)
+        )) {
+            return ['push', 0];
+        }
+        return super.updateBet(table, dice);
     }
 }
 
@@ -1113,6 +1120,11 @@ function mike_harris_15(player, table, unit=5, strat_info=null) {
     dontpass_odds(player, table, unit=unit, strat_info, win_mult="345")
 
     if (table.hasPoint()) {
+        // Remove any place bets that are now on the point
+        let placePointBet = player.getBet("Place", table.point);
+        if (placePointBet) {
+            player.removeBetByObject(placePointBet);
+        }
         // Odds on any come bet that has established a point
         this.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
             if (!player.getBet("Odds", b.subname)) {
@@ -1127,19 +1139,19 @@ function mike_harris_15(player, table, unit=5, strat_info=null) {
                 player.bet(new Odds(oddsAmount, b));
             }
         });
-        // place inside numbers (unless come bet exists on that number)
+        // place inside numbers (unless odds exists on that number)
         [5, 9].forEach(n=>{
-            if (!player.getBet("Odds", n) && !player.getBet("Place", n)) {
+            if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Place", n)) {
                 player.bet(new Place(20, n));
             }
         });
         [6, 8].forEach(n=>{
-            if (!player.getBet("Odds", n) && !player.getBet("Place", n)) {
+            if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Place", n)) {
                 player.bet(new Place(24, n));
             }
         });
         [4, 10].forEach(n=>{
-            if (!player.getBet("Odds", n) && !player.getBet("Buy", n)) {
+            if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Buy", n)) {
                 player.bet(new Buy(21, n));
             }
         });
