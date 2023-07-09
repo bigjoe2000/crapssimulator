@@ -28,6 +28,12 @@
                     el.removeChild(el.lastChild);
                 }
             }
+
+            const formatter = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+            });
+   
         </script>
         <style>
             .run {
@@ -79,17 +85,18 @@
             let strategies = [];
             let strategyOptions = strategiesEl.selectedOptions;
             for (let i = 0; i < strategyOptions.length; i++) {
-                strategies.push(strategiesAvailable[strategyOptions[i].value]);
+                strategies.push(new strategiesAvailable[strategyOptions[i].value]());
+            }
+
+            if (strategies.length == 0) {
+                strategies = [new passline()];
             }
             let config = {
                 numberOfRuns : document.querySelector('input[name=numberOfRuns]').value,
                 maxRolls : document.querySelector('input[name=maxRolls]').value,
                 maxShooters : document.querySelector('input[name=maxShooters]').value,
-                bankroll : document.querySelector('input[name=bankroll]').value
-            }
-
-            if (strategies.length == 0) {
-                strategies = [passline];
+                bankroll : document.querySelector('input[name=bankroll]').value,
+                'strategies' : strategies
             }
             let sim = new Simulation(config.numberOfRuns, config.maxRolls, config.maxShooters, config.bankroll, strategies);
 
@@ -113,11 +120,22 @@
 
             // Summarized will be dict of strategy names with values of dicts of ending backroll to number of times that occurred
             let summarized = {};
+            let stats = {};
             let totals = {};
+            let winCounts = {};
+            let winTotals = {};
+            let lossTotals = {};
             let max = -1;
             let min = Number.MAX_SAFE_INTEGER;
             Object.keys(output).forEach(k=>{
                 data.addColumn('number', k);
+                stats[k] = {
+                    totals : 0,
+                    winCounts : 0,
+                    winTotals : 0,
+                    lossCounts : 0,
+                    lossTotals : 0
+                }
                 console.log('summarizing:' + k);
                 summarized[k] = {};
                 output[k].forEach(array=>{
@@ -125,13 +143,22 @@
                     console.log('array:' + array);
                     summarized[k][winAmount] = summarized[k][winAmount] || 0;
                     summarized[k][winAmount] += 1;
-                    totals[k] = (totals[k] || 0) + winAmount;
+                    stats[k]['totals'] += winAmount;
+                    if (winAmount > 0) {
+                        stats[k]['winCounts'] += 1;
+                        stats[k]['winTotals'] += winAmount;
+                    } else {
+                        stats[k]['lossCounts'] += 1;
+                        stats[k]['lossTotals'] += winAmount;
+                    }
                     max = Math.max(max, winAmount);
                     min = Math.min(min, winAmount);
                 })
             })
 
-            Object.keys(totals).forEach(k=>console.log(totals[k] / config.numberOfRuns));
+            console.log("Stats:");
+            console.log(stats);
+            console.log("Summarized:");
             console.log(summarized);
 
             for (let i = min; i <= max; i++) {
@@ -141,11 +168,11 @@
                 })
                 data.addRow(row);
             };
-            google.charts.setOnLoadCallback(drawChart.bind(null, data, title, config));
+            google.charts.setOnLoadCallback(drawChart.bind(null, data, title, config, stats));
             statusEl.innerText = '';
         }
 
-        function drawChart(data, title, config) {
+        function drawChart(data, title, config, stats) {
             //data = google.visualization.arrayToDataTable(data);
             let parentEl = document.querySelector('div.chart');
             let runEl = parentEl.insertBefore(document.createElement('div'), parentEl.firstChild);
@@ -154,8 +181,32 @@
             titleEl.innerText = title;
             titleEl.classList.add('center');
             let configEl = runEl.appendChild(document.createElement('pre'));
+            let strategyNames = [];
+            config.strategies.forEach(s=>
+            strategyNames.push(s.constructor.name));
+            config.strategies = strategyNames;
             configEl.innerText = JSON.stringify(config, null, 2);
             configEl.classList.add('center');
+            let summaryEl = runEl.appendChild(document.createElement('table'));
+            summaryEl.classList.add('center');
+            let headEl = summaryEl.appendChild(document.createElement('tr'));
+            headEl.appendChild(document.createElement('th')).innerText = 'Strategy Name';
+            headEl.appendChild(document.createElement('th')).innerText = 'Average Win/Loss';
+            headEl.appendChild(document.createElement('th')).innerText = 'Win Count';
+            headEl.appendChild(document.createElement('th')).innerText = 'Win Average';
+            headEl.appendChild(document.createElement('th')).innerText = 'Loss Count';
+            headEl.appendChild(document.createElement('th')).innerText = 'Loss Average';
+            
+            config.strategies.forEach(s=>{
+                let rowEl = summaryEl.appendChild(document.createElement('tr'));
+                rowEl.appendChild(document.createElement('td')).innerText = s;
+                rowEl.appendChild(document.createElement('td')).innerText = formatter.format(stats[s]['totals'] / config.numberOfRuns);
+                rowEl.appendChild(document.createElement('td')).innerText = stats[s]['winCounts'];
+                rowEl.appendChild(document.createElement('td')).innerText = formatter.format(stats[s]['winTotals'] / stats[s]['winCounts']);
+                rowEl.appendChild(document.createElement('td')).innerText = stats[s]['lossCounts'];
+                rowEl.appendChild(document.createElement('td')).innerText = formatter.format(stats[s]['lossTotals'] / stats[s]['lossCounts']);
+            })
+
 
             new google.visualization.LineChart(runEl.appendChild(document.createElement('div'), parentEl.firstChild)).draw(data, {
                 curveType: 'function',

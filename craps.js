@@ -866,7 +866,7 @@ class Simulation {
     printout() {
         let table = new Table();
         this.strategies.forEach(s=>{
-            table.addPlayer(new Player(this.bankroll, new s(), s.name));
+            table.addPlayer(new Player(this.bankroll, s, s.name || s.constructor.name));
         })
         table.run(this.maxRolls, this.maxShooters);
     }
@@ -876,7 +876,7 @@ class Simulation {
         for (let i = 0; i < this.numOfRuns; i++) {
             let table = new Table();
             this.strategies.forEach(s=>{
-                table.addPlayer(new Player(this.bankroll, new s(), s.name));
+                table.addPlayer(new Player(this.bankroll, s, s.name || s.constructor.name));
             })
             table.run(this.maxRolls, this.maxShooters, false);
             table.players.forEach(player=>{
@@ -1197,9 +1197,7 @@ class mike_harris extends Strategy {
 class mike_harris_15 extends Strategy {
     dontOddsStrategy = new dontpass_odds('345');
     update(player, table, unit=5, strat_info=null) {
-        let startingMultipier = 1.5;
-        // Uncomment to decrease ending bankroll with every shooter
-        // * (.9 ** table.numberOfShooters);
+        let startingMultipier = 1.5 * (.95 ** table.numberOfShooters);
         
         if (player.startingBankroll * startingMultipier < player.bankroll) {
             log("Strategy Mike Harris 15 stopping after " + table.numberOfShooters + " shooters because it hit:" + startingMultipier + " of starting bankroll");
