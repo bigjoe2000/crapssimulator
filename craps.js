@@ -53,10 +53,6 @@ class Player {
         }
     }
 
-    hasBet(bet) {
-        return this.betsOnTable.indexOf(bet) > -1;
-    }
-
     getBet(name, subname='') {
         /* returns first betting object matching name and bet_subname.
         If bet_subname="Any", returns first betting object matching name */
@@ -706,11 +702,14 @@ class DontCome extends DontPass {
         this.name = 'DontCome';
     }
     updateBet(table_object, dice_object) {
-        [status, win_amount] = super.updateBet(table_object, dice_object);
+        let result = super.updateBet(table_object, dice_object);
+        let status = result[0];
+        let win_amount = result[1];
         if (!this.prepoint && this.subname == '') {
             this.subname = this.losing_numbers.join('');
             return [status, win_amount];
         }
+        return [status, win_amount];
     }
 
 }
@@ -1269,6 +1268,34 @@ class mike_harris_15 extends Strategy {
             player.bet(new Come(unit));
 
 
+        }
+    }
+}
+
+class frank_dontpassdontcome_odds_68 extends Strategy {
+    dontStrategy = new dontpass();
+    update(player, table, unit=5, strat_info=null) {
+        this.dontStrategy.update(player, table, 50);
+
+        if (table.hasPoint()) {
+            if (!player.getBet("DontCome")) {
+                player.bet(new DontCome(25));
+            }
+            if (player.getBet('DontPass') && !player.getBet("LayOdds", table.point) && [6,8].indexOf(table.point) > -1) {
+                console.log("Laying odds for dontpass with losing numbers:" + player.getBet("DontPass").losing_numbers);
+                player.bet(new LayOdds(100, player.getBet("DontPass")));
+            }
+
+            if (table.dice.total == 8) {
+                console.log('here');
+            }
+            player.betsOnTable.filter(b=>b.name == "DontCome" && (b.subname == "6" || b.subname == "8")).forEach(b=>{
+                if (!player.getBet("LayOdds", b.subname)) {
+                    console.log("Laying odds for bet with losing numbers:" + b.losing_numbers);
+                    player.bet(new LayOdds(50, b));
+                }
+            });
+    
         }
     }
 }
