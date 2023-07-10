@@ -1,0 +1,115 @@
+<html>
+    <head>
+        <script src="craps.js"></script>
+        <script src="conditions.js"></script>
+        <script>
+            removeChildren = function(el, leaveSome) {
+                let n = leaveSome || 0;
+                while(el.children.length > n) {
+                    el.removeChild(el.lastChild);
+                }
+            }
+
+        </script>
+        <style>
+            .hidden {
+                display: none;
+            }
+            div.condition {
+                border: 1px solid black;
+                padding: 8px;
+            }
+            div.subvalues {
+                border: 1px solid black;
+                padding: 8px;
+            }
+        </style>
+    </head>
+    <body>
+
+        <div class="templates hidden">
+            <div class="condition">
+                <select name="condition"></select><button>Remove</button>
+                <div class="subconditions"></div>
+                <div class="subvalues"></div>
+            </div>
+            <div class="value">
+                <select name="value">
+                </select>
+                <div class="inputs"></div>
+            </div>
+        </div>
+
+        <script>
+            const conditions = {
+                ConditionEquals : ConditionEquals,
+                ConditionNotEquals : ConditionNotEquals,
+                ConditionMoreThan : ConditionMoreThan,
+                ConditionLessThan : ConditionLessThan,
+                ConditionAnd : ConditionAnd,
+                ConditionOr : ConditionOr
+            }
+
+            const values = {
+                ValueExact : ValueExact,
+                ValuePoint : ValuePoint,
+                ValueShooterPoints : ValueShooterPoints,
+                ValueShooterNaturals : ValueShooterNaturals,
+                ValueNumberOfShooters : ValueNumberOfShooters,
+                ValueLastRoll : ValueLastRoll
+            }
+
+            const conditionsTemplate = document.querySelector('.templates .condition');
+            const valuesTemplate = document.querySelector('.templates .value');
+            {
+                let conditionSelector = conditionsTemplate.querySelector('select[name=condition]');
+                Object.keys(conditions).forEach(k=>{
+                    conditionSelector.appendChild(document.createElement('option')).innerText = k;
+                });
+                let valueSelector = valuesTemplate.querySelector('select[name=value]');
+                Object.keys(values).forEach(k=>{
+                    valueSelector.appendChild(document.createElement('option')).innerText = k;
+                })
+            }
+
+            function generateNewConditionsNode(parentEl) {
+                let el = conditionsTemplate.cloneNode(true);
+                parentEl.appendChild(el);
+                let subConditionsEl = el.querySelector('div.subconditions');
+                let subValuesEl = el.querySelector('div.subvalues');
+                el.querySelector('button').addEventListener('click', ()=>el.parentElement.removeChild(el));
+                el.querySelector('select[name=condition]').addEventListener('change', (e)=>{
+                    removeChildren(subConditionsEl);
+                    removeChildren(subValuesEl);
+                    if (conditions[e.target.value].prototype instanceof ConditionWrapper) {
+                        let addConditionButton = document.createElement('button');
+                        addConditionButton.innerText = 'Add';
+                        subConditionsEl.appendChild(addConditionButton);
+                        addConditionButton.addEventListener('click', ()=>{
+                            generateNewConditionsNode(subConditionsEl);
+                        })
+                        generateNewConditionsNode(subConditionsEl);
+                    } else if (conditions[e.target.value].prototype instanceof ConditionCompare) {
+                        generateNewValuesNode(subValuesEl);
+                        generateNewValuesNode(subValuesEl);
+                    }
+                })
+                el.querySelector('select[name=condition]').dispatchEvent(new Event('change'));
+            }
+            function generateNewValuesNode(parentEl) {
+                let el = valuesTemplate.cloneNode(true);
+                parentEl.appendChild(el);
+                let inputsEl = el.querySelector('div.inputs');
+                el.querySelector('select[name=value]').addEventListener('change', (e)=>{
+                    removeChildren(inputsEl);
+                    if (values[e.target.value] == ValueExact) {
+                        inputsEl.appendChild(document.createElement('input')).type = 'text';
+                    }
+                })
+                el.querySelector('select[name=value]').dispatchEvent(new Event('change'));
+            }
+            generateNewConditionsNode(document.body);
+            </script>
+    </body>
+</html>
+

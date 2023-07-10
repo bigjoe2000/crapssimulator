@@ -931,8 +931,6 @@ class Strategy {
 
 }
 
-
-
 class passline extends Strategy {
     update(player, table, unit, strat_info) {
         if (!table.hasPoint() && !player.getBet("PassLine"))
@@ -1274,59 +1272,7 @@ class mike_harris_15 extends Strategy {
         }
     }
 }
-/**
- * 
- * current_numbers = []
-for bet in player.bets_on_table:
-    current_numbers += bet.winning_numbers
-current_numbers = list(set(current_numbers))
 
-if table.point == "On":
-    # Put odds on any come bets
-    for bet in player.bets_on_table:
-        if bet.name == "Come" and bet.subname:
-            if not player.has_bet("Odds", bet.subname):
-                player.bet(Odds(unit, bet))
-
-
-    # Always run a come bet
-    player.bet(Come(unit))
-
-    # always place 5, 6, 8, 9 when they aren't come bets or place bets already
-    if 5 not in current_numbers and 5 != table.point.number:
-        player.bet(Place5(unit))
-    if 6 not in current_numbers and 6 != table.point.number:
-        player.bet(Place6(6 / 5 * unit))
-    if 8 not in current_numbers and 8 != table.point.number:
-        player.bet(Place8(6 / 5 * unit))
-    if 9 not in current_numbers and 9 != table.point.number:
-        player.bet(Place9(unit))
-
-    # buy the 4 and 10 if not already covered
-    if 4 not in current_numbers and 4 != table.point.number:
-        player.bet(Buy(unit, 4))
-    if 10 not in current_numbers and 10 != table.point.number:
-        player.bet(Buy(unit, 10))
-
-if table.point == "On" and table.point.number % 2 == 0 and player.get_bet("Hard", table.point.number) == None:
-    player.bet(Hard(table.point.number, unit))
-
-# hop each of the 3 sevens when you have established 2 Come bets (one of which is 4/10) or 3 come bets
-# start with 5 each hop, +1 for every other established come bet
-# at $5 table, can start the hop at $1
-come_bets = len([x for x in player.bets_on_table if x.name == 'Come' and x.subname])
-
-# one of those come bets, by definition, is not established
-hop_the_seven = come_bets > 2
-if not hop_the_seven and come_bets > 1 and (player.has_bet("Come", "4") or player.has_bet("Come", "10")):
-    hop_the_seven = True
-
-if hop_the_seven:
-    hop_amount = math.ceil(unit/3) + max(0, come_bets - 4)
-    player.bet(Hop("16", hop_amount))
-    player.bet(Hop("25", hop_amount))
-    player.bet(Hop("34", hop_amount))
- */
 
 
 
