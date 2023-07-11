@@ -457,6 +457,12 @@ class Bet {
         Ratio that bet pays out on a win
     commission: float
         Commission paid to make a bet
+    offOnComeOut : boolean
+        The bet is not working on the come out roll
+    comeOutRollPush : boolean
+        If bet is off, and would have won or lost on come out roll, push the bet. 
+        This is necessary for odds bets where the underlying bet is taken down.
+        If this is true, off on come out must be true
 
      */;
 
@@ -467,6 +473,7 @@ class Bet {
     payoutratio = 1;
     commission = 0;
     offOnComeOut = false;
+    comeOutRollPush = false;
 
     // TODO: add whether bet can be removed
 
@@ -479,6 +486,9 @@ class Bet {
         let win_amount = 0;
     
         if (this.offOnComeOut && !table.hasPoint()) {
+            if (this.comeOutRollPush && (this.winning_numbers.includes(dice.total) || this.losing_numbers.includes(dice.total))) {
+                status = 'push';
+            }
             return [status, win_amount];
         }
         if (this.winning_numbers.includes(dice.total)) {
@@ -545,30 +555,65 @@ class Come extends PassLine {
 }
 
 class Odds extends Bet {
-    constructor(betAmount, bet_object) {
+    constructor(betAmount, number) {
         super(betAmount);
+        number = parseInt(number);
         this.name = 'Odds';
-        this.subname = [bet_object.winning_numbers].join('');
-        this.winning_numbers = bet_object.winning_numbers;
-        this.losing_numbers = bet_object.losing_numbers;
+        this.subname = number;
+        this.winning_numbers = [number];
+        this.losing_numbers = [7];
         this.offOnComeOut = true;
     
-        if ([4,10].indexOf(this.winning_numbers[0]) > -1) {
-            this.payoutratio = 2 / 1;
-        } else if([5,9].indexOf(this.winning_numbers[0]) > -1) {
-            this.payoutratio = 3 / 2;
-        } else if ([6,8].indexOf(this.winning_numbers[0]) > -1) {
-            this.payoutratio = 6 / 5;
+        switch (parseInt(number)) {
+            case 4:
+            case 10:
+                this.payoutratio = 2 / 1;
+                break;
+            case 5:
+            case 9:
+                this.payoutratio = 3 / 2;
+                break;
+            case 6:
+            case 8:
+                this.payoutratio = 6 / 5;
+                break;
         }
     }
 
-    updateBet(table, dice) {
-        if (this.offOnComeOut && !table.hasPoint() && (
-            this.winning_numbers.includes(dice.total) || this.losing_numbers.includes(dice.total)
-        )) {
-            return ['push', 0];
+    // updateBet(table, dice) {
+    //     if (this.offOnComeOut && !table.hasPoint() && (
+    //         this.winning_numbers.includes(dice.total) || this.losing_numbers.includes(dice.total)
+    //     )) {
+    //         return ['push', 0];
+    //     }
+    //     return super.updateBet(table, dice);
+    // }
+}
+
+class LayOdds extends Bet {
+    constructor(betAmount, number) {
+        super(betAmount);
+        number = parseInt(number);
+        this.name = 'LayOdds';
+        this.subname = number;
+        this.winning_numbers = [7];
+        this.losing_numbers = [number];
+        this.offOnComeOut = true;
+    
+        switch (parseInt(number)) {
+            case 4:
+            case 10:
+                this.payoutratio = 1 / 2;
+                break;
+            case 5:
+            case 9:
+                this.payoutratio = 2 / 3;
+                break;
+            case 6:
+            case 8:
+                this.payoutratio = 5 / 6;
+                break;
         }
-        return super.updateBet(table, dice);
     }
 }
 
@@ -714,24 +759,7 @@ class DontCome extends DontPass {
 
 }
 
-class LayOdds extends Bet {
-    constructor(betAmount, bet_object) {
-        super(betAmount);
-        this.name = 'LayOdds';
-        this.subname = bet_object.losing_numbers.join('');
-        this.winning_numbers = bet_object.winning_numbers;
-        this.losing_numbers = bet_object.losing_numbers;
-        this.offOnComeOut = true;
-    
-        if ([4,10].indexOf(this.losing_numbers[0]) > -1) {
-            this.payoutratio = 1 / 2;
-        } else if ([5,9].indexOf(this.losing_numbers[0]) > -1) {
-            this.payoutratio = 2 / 3;
-        } else if ([6,8].indexOf(this.losing_numbers[0]) > -1) {
-            this.payoutratio = 5 / 6;
-        }
-    }
-}
+
 
 class AnyCraps extends Bet {
     constructor(betAmount) {
@@ -800,7 +828,7 @@ class Horn11 extends Bet {
 }
 
 class Hard extends Bet {
-    constructor(number, betAmount) {
+    constructor(betAmount, number) {
         super(betAmount);
         if (number % 2 != 0)
             throw new Error('Bad value for hardway:' + number);
@@ -830,7 +858,7 @@ class Hard extends Bet {
 }
 
 class Hop extends Bet {
-    constructor(twodice, betAmount) {
+    constructor(betAmount, twodice) {
         super(betAmount);
         this.name = 'Hop';
         this.subname = twodice;
@@ -952,7 +980,7 @@ class passline_odds extends Strategy {
             return;
         if (player.getBet("Odds", table.point))
             return;
-        player.bet(new Odds(calculateOddsBet(table.point, unit=unit, this.win_mult), passlineBet));
+        player.bet(new Odds(calculateOddsBet(table.point, unit=unit, this.win_mult), table.point));
     }
 }
 
@@ -986,7 +1014,7 @@ class dontpass_odds extends Strategy {
         if (table.hasPoint()) {
             let dontPassBet = player.getBet("DontPass");
             if (dontPassBet && !player.getBet("LayOdds", table.point)) {
-                player.bet(new LayOdds(calculateLayOddsBet(table.point, unit, this.win_mult), dontPassBet));
+                player.bet(new LayOdds(calculateLayOddsBet(table.point, unit, this.win_mult), table.point));
             }
         }
     }
@@ -1097,7 +1125,7 @@ class hardways extends Strategy {
     update(player, table, unit=5, strat_info=null) {
         [4, 6, 8, 10].forEach(n=>{
             if (!player.getBet("Hard", n)) {
-                player.bet(new Hard(n, unit));
+                player.bet(new Hard(unit, n));
             }        
         });
     }
@@ -1121,7 +1149,7 @@ class pass_2come extends Strategy {
         this.passOddsStrategy.update(player, table, unit);
         player.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
             if (!player.getBet("Odds", b.subname)) {
-                player.bet(new Odds(unit, b));
+                player.bet(new Odds(unit, b.subname));
             }
         });
         if (table.hasPoint() && player.countBets("Come") < 2) {
@@ -1149,7 +1177,7 @@ class mike_harris extends Strategy {
             // Odds on any come bet that has established a point
             player.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
                 if (!player.getBet("Odds", b.subname)) {
-                    player.bet(new Odds(unit, b));
+                    player.bet(new Odds(unit, b.subname));
                 }
             });
             // place inside numbers (unless come bet exists on that number)
@@ -1165,7 +1193,7 @@ class mike_harris extends Strategy {
             });
             // If point is hard way, bet that hard way
             if (table.point % 2 == 0 && !player.getBet("Hard", table.point)) {
-                player.bet(new Hard(table.point, unit));
+                player.bet(new Hard(unit, table.point));
             }
 
             // If at least 3 come bets are established, or 2 come bets and one of them is on 4 or 10, hop the sevens
@@ -1178,9 +1206,9 @@ class mike_harris extends Strategy {
             }
 
             if (hopAmount > 0) {
-                player.bet(new Hop("16", hopAmount));
-                player.bet(new Hop("25", hopAmount));
-                player.bet(new Hop("34", hopAmount));
+                player.bet(new Hop(hopAmount, "16"));
+                player.bet(new Hop(hopAmount, "25"));
+                player.bet(new Hop(hopAmount, "34"));
             }
 
             // Add a come bet every roll
@@ -1229,7 +1257,7 @@ class mike_harris_15 extends Strategy {
                     } else {
                         oddsAmount = 30;
                     }
-                    player.bet(new Odds(oddsAmount, b));
+                    player.bet(new Odds(oddsAmount, b.subname));
                 }
             });
             // place inside numbers (unless odds exists on that number)
@@ -1250,7 +1278,7 @@ class mike_harris_15 extends Strategy {
             });
             // If point is hard way, bet that hard way
             if (table.point % 2 == 0 && !player.getBet("Hard", table.point)) {
-                player.bet(new Hard(table.point, 16));
+                player.bet(new Hard(16, table.point));
             }
 
             // Count up the odds bets (which in this strategy are the Come bets)
@@ -1259,9 +1287,9 @@ class mike_harris_15 extends Strategy {
             let hopAmount = parseInt(oddsAtRisk/15) - 3;
 
             if (hopAmount > 0) {
-                player.bet(new Hop("16", hopAmount));
-                player.bet(new Hop("25", hopAmount));
-                player.bet(new Hop("34", hopAmount));
+                player.bet(new Hop(hopAmount, "16"));
+                player.bet(new Hop(hopAmount, "25"));
+                player.bet(new Hop(hopAmount, "34"));
             }
 
             // Add a come bet every roll
@@ -1283,7 +1311,7 @@ class frank_dontpassdontcome_odds_68 extends Strategy {
             }
             if (player.getBet('DontPass') && !player.getBet("LayOdds", table.point) && [6,8].indexOf(table.point) > -1) {
                 console.log("Laying odds for dontpass with losing numbers:" + player.getBet("DontPass").losing_numbers);
-                player.bet(new LayOdds(100, player.getBet("DontPass")));
+                player.bet(new LayOdds(100, table.point));
             }
 
             if (table.dice.total == 8) {
@@ -1292,7 +1320,7 @@ class frank_dontpassdontcome_odds_68 extends Strategy {
             player.betsOnTable.filter(b=>b.name == "DontCome" && (b.subname == "6" || b.subname == "8")).forEach(b=>{
                 if (!player.getBet("LayOdds", b.subname)) {
                     console.log("Laying odds for bet with losing numbers:" + b.losing_numbers);
-                    player.bet(new LayOdds(50, b));
+                    player.bet(new LayOdds(50, b.subname));
                 }
             });
     
