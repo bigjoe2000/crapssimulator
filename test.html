@@ -19,24 +19,48 @@
                 border: 1px solid black;
                 padding: 8px;
             }
-            div.subvalues {
+            div.action {
                 border: 1px solid black;
+                padding: 8px;
+            }
+            div.rule {
+                border: 3px solid black;
                 padding: 8px;
             }
         </style>
     </head>
     <body>
+        <div class="rules">
+            <button class="addRule">New Rule</button>
+
+        </div>
 
         <div class="templates hidden">
             <div class="condition">
                 <select name="condition"></select><button>Remove</button>
                 <div class="subconditions"></div>
-                <div class="subvalues"></div>
+            </div>
+            <div class="action">
+                <select name="action"></select><button>Remove</button>
+                <div class="subactions"></div>
             </div>
             <div class="value">
-                <select name="value">
-                </select>
-                <div class="inputs"></div>
+                <select name="value"></select>
+                <span class="inputs"></span>
+            </div>
+            <div class="actionDetails">
+                <div>
+                    <label>Bet Type</label>
+                    <select name="type"></select>
+                </div>
+                <div>
+                    <label>Bet Amount</label>
+                    <span class="valueWrapper"></span>
+                </div>
+                <div class="numberWrapper hidden">
+                    <label>Bet Number</label>
+                    <select name="number"></select>
+                </div>
             </div>
         </div>
 
@@ -59,28 +83,59 @@
                 ValueLastRoll : ValueLastRoll
             }
 
-            const conditionsTemplate = document.querySelector('.templates .condition');
-            const valuesTemplate = document.querySelector('.templates .value');
-            {
-                let conditionSelector = conditionsTemplate.querySelector('select[name=condition]');
-                Object.keys(conditions).forEach(k=>{
-                    conditionSelector.appendChild(document.createElement('option')).innerText = k;
-                });
-                let valueSelector = valuesTemplate.querySelector('select[name=value]');
-                Object.keys(values).forEach(k=>{
-                    valueSelector.appendChild(document.createElement('option')).innerText = k;
-                })
+            const actions = {
+                ActionMakeBet : ActionMakeBet,
+                ActionRemoveBet : ActionRemoveBet,
+                ActionStopBetting : ActionStopBetting,
+                ActionMultiple : ActionMultiple,
             }
 
+            const bets = {
+                Pass : Pass,
+                DontPass : DontPass,
+                Buy : Buy,
+                Hop : Hop,
+                Come : Come,
+                DontCome : DontCome,
+                Place : Place,
+                Field : Field,
+                Hard : Hard,
+                Odds : Odds,
+                LayOdds : LayOdds,
+                AnyCraps : AnyCraps,
+                AnySeven : AnySeven
+            }
+
+            const conditionsTemplate = document.querySelector('.templates div.condition');
+            const valuesTemplate = document.querySelector('.templates div.value');
+            const actionsTemplate = document.querySelector('.templates div.action');
+            const actionDetailsTemplate = document.querySelector('.templates div.actionDetails');
+
+            function fillSelect(selectorEl, obj) {
+                Object.keys(obj).forEach(k=>{
+                    selectorEl.appendChild(document.createElement('option')).innerText = k;
+                });
+            }
+
+            fillSelect(conditionsTemplate.querySelector('select'), conditions);
+            fillSelect(valuesTemplate.querySelector('select'), values);
+            fillSelect(actionsTemplate.querySelector('select'), actions);
+            fillSelect(actionDetailsTemplate.querySelector('select[name=type]'), bets);
+
+            const hopNumbers = [];
+            for (let i = 1; i < 7; i++) {
+                for (let j = i; j < 7; j++) {
+                    hopNumbers.push('' + i + j);
+                }
+            }
+            
             function generateNewConditionsNode(parentEl) {
                 let el = conditionsTemplate.cloneNode(true);
                 parentEl.appendChild(el);
                 let subConditionsEl = el.querySelector('div.subconditions');
-                let subValuesEl = el.querySelector('div.subvalues');
                 el.querySelector('button').addEventListener('click', ()=>el.parentElement.removeChild(el));
                 el.querySelector('select[name=condition]').addEventListener('change', (e)=>{
                     removeChildren(subConditionsEl);
-                    removeChildren(subValuesEl);
                     if (conditions[e.target.value].prototype instanceof ConditionWrapper) {
                         let addConditionButton = document.createElement('button');
                         addConditionButton.innerText = 'Add';
@@ -90,8 +145,8 @@
                         })
                         generateNewConditionsNode(subConditionsEl);
                     } else if (conditions[e.target.value].prototype instanceof ConditionCompare) {
-                        generateNewValuesNode(subValuesEl);
-                        generateNewValuesNode(subValuesEl);
+                        generateNewValuesNode(subConditionsEl);
+                        generateNewValuesNode(subConditionsEl);
                     }
                 })
                 el.querySelector('select[name=condition]').dispatchEvent(new Event('change'));
@@ -99,7 +154,7 @@
             function generateNewValuesNode(parentEl) {
                 let el = valuesTemplate.cloneNode(true);
                 parentEl.appendChild(el);
-                let inputsEl = el.querySelector('div.inputs');
+                let inputsEl = el.querySelector('.inputs');
                 el.querySelector('select[name=value]').addEventListener('change', (e)=>{
                     removeChildren(inputsEl);
                     if (values[e.target.value] == ValueExact) {
@@ -108,7 +163,72 @@
                 })
                 el.querySelector('select[name=value]').dispatchEvent(new Event('change'));
             }
-            generateNewConditionsNode(document.body);
+            function generateNewActionsNode(parentEl) {
+                let el = actionsTemplate.cloneNode(true);
+                parentEl.appendChild(el);
+                let subEl = el.querySelector('div.subactions');
+                el.querySelector('button').addEventListener('click', ()=>el.parentElement.removeChild(el));
+                el.querySelector('select[name=action]').addEventListener('change', (e)=>{
+                    removeChildren(subEl);
+                    if (actions[e.target.value].prototype instanceof ActionWrapper) {
+                        let addButton = document.createElement('button');
+                        addButton.innerText = 'Add';
+                        subEl.appendChild(addButton);
+                        addButton.addEventListener('click', ()=>{
+                            generateNewActionsNode(subEl);
+                        })
+                        generateNewActionsNode(subEl);
+                    } else if (actions[e.target.value].prototype instanceof ActionBet) {
+                        let detailsNode = subEl.appendChild(actionDetailsTemplate.cloneNode(true));
+                        generateNewValuesNode(detailsNode.querySelector('.valueWrapper'));
+                        let numberWrapper = detailsNode.querySelector('.numberWrapper');
+                        let numberSelector = numberWrapper.querySelector('select[name=number]');
+                        let typeSelector = detailsNode.querySelector('select[name=type]');
+                        typeSelector.addEventListener('change', (e)=>{
+                            numberWrapper.classList.add('hidden');
+                            numberSelector.value = 0;
+                            removeChildren(numberSelector);
+                            let availableNumbers = [];
+                            switch (e.target.value) {
+                                case 'Buy':
+                                case 'Place':
+                                case 'Odds':
+                                case 'LayOdds':
+                                    availableNumbers = [4,5,6,8,9,10];
+                                break;
+                                case 'Hard':
+                                    availableNumbers = [4,6,8,10];
+                                break;
+                                case 'Hop':
+                                    availableNumbers = hopNumbers;
+                                break;
+                                default:
+                                    return;
+                            }
+                            availableNumbers.forEach(n=>{
+                                numberSelector.appendChild(document.createElement('option')).innerText = n;
+                            });
+                            numberWrapper.classList.remove('hidden');
+                        });
+                        typeSelector.dispatchEvent(new Event('change'));
+
+                    }
+                })
+                el.querySelector('select[name=action]').dispatchEvent(new Event('change'));
+            }
+
+            function generateNewRuleBlock(parentEl) {
+                let ruleEl = parentEl.appendChild(document.createElement('div'));
+                ruleEl.classList.add('rule');
+                generateNewConditionsNode(ruleEl);
+                generateNewActionsNode(ruleEl);
+            }
+
+            const rulesEl = document.querySelector('div.rules');
+            rulesEl.querySelector('button').addEventListener('click', ()=>{
+                let el = rulesEl.appendChild(document.createElement('div'));
+                generateNewRuleBlock(el);
+            })
             </script>
     </body>
 </html>

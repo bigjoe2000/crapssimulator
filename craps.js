@@ -509,12 +509,12 @@ class Bet {
 Passline and Come bets
  */
 
-class PassLine extends Bet {
+class Pass extends Bet {
     // TODO: make this require that table_object.point = "Off",
     // probably better in the player module
     constructor(betAmount) {
         super(betAmount);
-        this.name = 'PassLine';
+        this.name = 'Pass';
         this.winning_numbers = [7, 11];
         this.losing_numbers = [2, 3, 12];
         this.payoutratio = 1.0;
@@ -538,7 +538,7 @@ class PassLine extends Bet {
     }
 }
 
-class Come extends PassLine {
+class Come extends Pass {
     constructor(betAmount) {
         super(betAmount);
         this.name = 'Come';
@@ -960,8 +960,8 @@ class Strategy {
 
 class passline extends Strategy {
     update(player, table, unit, strat_info) {
-        if (!table.hasPoint() && !player.getBet("PassLine"))
-        player.bet(new PassLine(unit));
+        if (!table.hasPoint() && !player.getBet("Pass"))
+        player.bet(new Pass(unit));
     }
 }
 
@@ -975,7 +975,7 @@ class passline_odds extends Strategy {
         this.passlineStrategy.update(player, table, unit);
         if (!table.hasPoint())
             return;
-        let passlineBet = player.getBet("PassLine");
+        let passlineBet = player.getBet("Pass");
         if (!passlineBet)
             return;
         if (player.getBet("Odds", table.point))

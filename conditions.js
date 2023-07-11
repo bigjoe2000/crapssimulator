@@ -115,3 +115,50 @@ class ValueBetsOnTable extends Value {
         return player.totalBetAmount;
     }
 }
+
+class Action {}
+
+class ActionBet extends Action {
+    constructor(betClass, amount, number) {
+        super();
+        this.betClass = betClass;
+        this.amount = amount;
+        this.number = number;
+    }
+}
+
+class ActionWrapper extends Action {
+    constructor(actions) {
+        super();
+        this.actions = actions;
+    }
+}
+
+class ActionMultiple extends ActionWrapper {
+    takeAction(player) {
+        this.actions.forEach(action=>{
+            action.takeAction(player);
+        })
+    }
+}
+
+class ActionStopBetting extends Action {
+    takeAction(player) {
+        player.bettingStrategy.stopped = true;
+    }
+}
+
+class ActionMakeBet extends ActionBet {
+    takeAction(player) {
+        player.bet(new window[this.betClass](amount, number));
+    }
+}
+
+class ActionRemoveBet extends ActionBet {
+    takeAction(player) {
+        let bet = player.getBet(betClass, number);
+        if (bet) {
+            player.removeBetByObject(bet);
+        }
+    }
+}
