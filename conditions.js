@@ -4,6 +4,18 @@ class Condition {
     }
 }
 
+class ConditionPointOn extends Condition {
+    isTrue(player, table) {
+        return table.hasPoint();
+    }
+}
+
+class ConditionPointOff extends Condition {
+    isTrue(player, table) {
+        return !table.hasPoint();
+    }
+}
+
 class ConditionCompare extends Condition {
     constructor(value1, value2) {
         super();

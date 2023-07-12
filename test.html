@@ -34,14 +34,18 @@
             <button class="addRule">New Rule</button>
 
         </div>
+        <button class="generateResults">Convert to Json</button>
+        <div class="result">
+            <pre class="json"></pre>
+        </div>
 
         <div class="templates hidden">
             <div class="condition">
-                <select name="condition"></select><button>Remove</button>
+                <select name="condition"></select><button>RemoveCondition</button>
                 <div class="subconditions"></div>
             </div>
             <div class="action">
-                <select name="action"></select><button>Remove</button>
+                <select name="action"></select><button>Remove Action</button>
                 <div class="subactions"></div>
             </div>
             <div class="value">
@@ -62,10 +66,16 @@
                     <select name="number"></select>
                 </div>
             </div>
+            <div class="rule">
+
+                <button class="remove">Remove Rule</button>
+            </div>
         </div>
 
         <script>
             const conditions = {
+                ConditionPointOff : ConditionPointOff,
+                ConditionPointOn : ConditionPointOn,
                 ConditionEquals : ConditionEquals,
                 ConditionNotEquals : ConditionNotEquals,
                 ConditionMoreThan : ConditionMoreThan,
@@ -110,6 +120,10 @@
             const valuesTemplate = document.querySelector('.templates div.value');
             const actionsTemplate = document.querySelector('.templates div.action');
             const actionDetailsTemplate = document.querySelector('.templates div.actionDetails');
+            const ruleTemplate = document.querySelector('.templates div.rule');
+
+            const rulesEl = document.querySelector('div.rules');
+            const resultEl = document.querySelector('div.result pre.json');
 
             function fillSelect(selectorEl, obj) {
                 Object.keys(obj).forEach(k=>{
@@ -133,7 +147,13 @@
                 let el = conditionsTemplate.cloneNode(true);
                 parentEl.appendChild(el);
                 let subConditionsEl = el.querySelector('div.subconditions');
-                el.querySelector('button').addEventListener('click', ()=>el.parentElement.removeChild(el));
+
+                let removeButton = el.querySelector('button');
+                removeButton.addEventListener('click', ()=>el.parentElement.removeChild(el));
+                if (removeButton.parentElement.parentElement.querySelectorAll('.condition').length == 1) {
+                    removeButton.classList.add('hidden');
+                }
+
                 el.querySelector('select[name=condition]').addEventListener('change', (e)=>{
                     removeChildren(subConditionsEl);
                     if (conditions[e.target.value].prototype instanceof ConditionWrapper) {
@@ -158,7 +178,10 @@
                 el.querySelector('select[name=value]').addEventListener('change', (e)=>{
                     removeChildren(inputsEl);
                     if (values[e.target.value] == ValueExact) {
-                        inputsEl.appendChild(document.createElement('input')).type = 'text';
+                        let inputEl = document.createElement('input');
+                        inputsEl.appendChild(inputEl);
+                        inputEl.type = 'number';
+                        inputEl.value = 0;
                     }
                 })
                 el.querySelector('select[name=value]').dispatchEvent(new Event('change'));
@@ -167,7 +190,11 @@
                 let el = actionsTemplate.cloneNode(true);
                 parentEl.appendChild(el);
                 let subEl = el.querySelector('div.subactions');
-                el.querySelector('button').addEventListener('click', ()=>el.parentElement.removeChild(el));
+                let removeButton = el.querySelector('button');
+                removeButton.addEventListener('click', ()=>el.parentElement.removeChild(el));
+                if (removeButton.parentElement.parentElement.querySelectorAll('.action').length == 1) {
+                    removeButton.classList.add('hidden');
+                }
                 el.querySelector('select[name=action]').addEventListener('change', (e)=>{
                     removeChildren(subEl);
                     if (actions[e.target.value].prototype instanceof ActionWrapper) {
@@ -218,17 +245,101 @@
             }
 
             function generateNewRuleBlock(parentEl) {
-                let ruleEl = parentEl.appendChild(document.createElement('div'));
-                ruleEl.classList.add('rule');
+                let ruleEl = parentEl.appendChild(ruleTemplate.cloneNode(true));
                 generateNewConditionsNode(ruleEl);
                 generateNewActionsNode(ruleEl);
+                // Move remove button to the end of the div
+                ruleEl.appendChild(ruleEl.firstElementChild);
             }
 
-            const rulesEl = document.querySelector('div.rules');
             rulesEl.querySelector('button').addEventListener('click', ()=>{
-                let el = rulesEl.appendChild(document.createElement('div'));
-                generateNewRuleBlock(el);
+                generateNewRuleBlock(rulesEl);
             })
+
+            document.body.querySelector('button.generateResults').addEventListener('click', parseRules);
+
+            function parseRules() {
+                removeChildren(resultEl);
+                let rules = [];
+                rulesEl.querySelectorAll('div.rule').forEach(el=>{
+                    rules.push(parseRule(el));
+                });
+                resultEl.innerText = JSON.stringify(rules, null, 2);
+            }
+
+            function parseRule(el) {
+                return {
+                    condition: parseCondition(el.querySelector('div.condition')),
+                    action: parseAction(el.querySelector('div.action'))
+                }
+            }
+
+            function parseCondition(conditionEl) {
+                let type = conditionEl.querySelector('select').value;
+                let subconditions = [];
+                conditionEl.querySelectorAll('.subconditions div.condition').forEach(el=>subconditions.push(parseCondition(el)));
+                let values = [];
+                conditionEl.querySelectorAll('.subconditions div.value').forEach(el=>values.push(parseValue(el)));
+                let condition = {type: type};
+                if (values.length > 0) {
+                    condition.values = values;
+                }
+                if (subconditions.length > 0) {
+                    condition.conditions = conditions;
+                }
+                return condition;
+            }
+
+            function parseValue(valueEl) {
+                let type = valueEl.querySelector('select').value;
+                let inputs = [];
+                valueEl.querySelectorAll('span.inputs input').forEach(el=>inputs.push(el.value));
+                value = {
+                    type: type
+                };
+                if (inputs.length > 0) {
+                    value.inputs = inputs;
+                }
+                return value;
+            }
+
+            function parseAction(el) {
+                let action = {
+                    type: el.querySelector('select').value
+                };
+                let detailsEl = el.querySelector('.subactions .actionDetails');
+                if (detailsEl) {
+                    let details = parseActionDetails(detailsEl);
+                    if (Object.keys(details).length > 0) {
+                        action.details = details;
+                    }
+                }
+                let actions = [];
+                el.querySelectorAll('.subactions div.action').forEach(subel=>{
+                    actions.push(parseAction(subel));
+                })
+                if (actions.length) {
+                    action.actions = actions;
+                }
+                return action;
+            }
+
+            function parseActionDetails(el) {
+                let details = {};
+                let typeEl = el.querySelector('div select[name=type]');
+                if (typeEl) {
+                    details.betType = typeEl.value;
+                }
+                let numberEl = el.querySelector('div.numberWrapper select[name=number]');
+                if (numberEl && numberEl.value) {
+                    details.number = numberEl.value;
+                }
+                let valueEl = el.querySelector('div span.valueWrapper div.value');
+                if (valueEl) {
+                    details.amount = parseValue(valueEl);
+                }
+                return details;
+            }
             </script>
     </body>
 </html>
