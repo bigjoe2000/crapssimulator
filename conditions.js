@@ -139,21 +139,6 @@ class ActionBet extends Action {
     }
 }
 
-class ActionWrapper extends Action {
-    constructor(actions) {
-        super();
-        this.actions = actions;
-    }
-}
-
-class ActionMultiple extends ActionWrapper {
-    takeAction(player) {
-        this.actions.forEach(action=>{
-            action.takeAction(player);
-        })
-    }
-}
-
 class ActionStopBetting extends Action {
     takeAction(player) {
         player.bettingStrategy.stopped = true;
