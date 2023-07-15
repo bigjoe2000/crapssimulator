@@ -34,10 +34,69 @@
             <button class="addRule">New Rule</button>
 
         </div>
+        <hr>
         <button class="generateResults">Convert to Json</button>
         <div class="result">
             <pre class="json"></pre>
         </div>
+        <div class="import">
+            <button>Import Json</button>
+            <textarea cols="100" rows="25">
+                {
+                    "rules": [
+                      {
+                        "condition": {
+                          "type": "ConditionEquals",
+                          "values": [
+                            {
+                              "type": "ValuePoint"
+                            },
+                            {
+                              "type": "ValueExact",
+                              "amount": "5"
+                            }
+                          ]
+                        },
+                        "actions": [
+                          {
+                            "type": "ActionMakeBet",
+                            "details": {
+                              "betType": "Pass",
+                              "amount": {
+                                "type": "ValueExact",
+                                "amount": "15"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ActionMakeBet",
+                            "details": {
+                              "betType": "Come",
+                              "amount": {
+                                "type": "ValueExact",
+                                "amount": "15"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ActionMakeBet",
+                            "details": {
+                              "betType": "Place",
+                              "number": "5",
+                              "amount": {
+                                "type": "ValueExact",
+                                "amount": "20"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+</textarea>
+        </div>
+        <hr>
+
 
         <div class="templates hidden">
             <div class="condition">
@@ -63,7 +122,7 @@
             </div>
             <div class="value">
                 <select name="value"></select>
-                <span class="inputs"></span>
+                <input type="number" class="hidden" name="amount">
             </div>
             <div class="actionDetails">
                 <div>
@@ -159,18 +218,19 @@
                 }
             }
             
-            function generateNewConditionsNode(parentEl) {
+            function generateNewConditionsNode(parentEl, condition) {
                 let el = conditionsTemplate.cloneNode(true);
                 parentEl.appendChild(el);
                 let subConditionsEl = el.querySelector('div.subconditions');
 
                 let removeButton = el.querySelector('button');
                 removeButton.addEventListener('click', ()=>el.parentElement.removeChild(el));
-                if (removeButton.parentElement.parentElement.querySelectorAll('.condition').length == 1) {
+                if (removeButton.parentElement.parentElement.classList.contains('rule')) {
                     removeButton.classList.add('hidden');
                 }
 
-                el.querySelector('select[name=condition]').addEventListener('change', (e)=>{
+                let conditionSelector = el.querySelector('select[name=condition]');
+                conditionSelector.addEventListener('change', (e)=>{
                     removeChildren(subConditionsEl);
                     if (conditions[e.target.value].prototype instanceof ConditionWrapper) {
                         let addConditionButton = document.createElement('button');
@@ -185,37 +245,60 @@
                         generateNewValuesNode(subConditionsEl);
                     }
                 })
-                el.querySelector('select[name=condition]').dispatchEvent(new Event('change'));
+                if (condition) {
+                    conditionSelector.value = condition.type;
+                    if (conditions[condition.type].prototype instanceof ConditionWrapper) {
+                        let addConditionButton = document.createElement('button');
+                        addConditionButton.innerText = 'Add';
+                        subConditionsEl.appendChild(addConditionButton);
+                        addConditionButton.addEventListener('click', ()=>{
+                            generateNewConditionsNode(subConditionsEl);
+                        })
+                        condition.conditions.forEach(c=>{
+                            generateNewConditionsNode(subConditionsEl, c);
+                        })
+                    } else if (conditions[condition.type].prototype instanceof ConditionCompare) {
+                        condition.values && condition.values.forEach(v=>{
+                            generateNewValuesNode(subConditionsEl, v);
+                        })
+                    }
+                } else {
+                    el.querySelector('select[name=condition]').dispatchEvent(new Event('change'));
+                }
             }
-            function generateNewValuesNode(parentEl) {
+            function generateNewValuesNode(parentEl, value) {
                 let el = valuesTemplate.cloneNode(true);
                 parentEl.appendChild(el);
-                let inputsEl = el.querySelector('.inputs');
-                el.querySelector('select[name=value]').addEventListener('change', (e)=>{
-                    removeChildren(inputsEl);
+                let inputEl = el.querySelector(':scope > input');
+                let valueTypeSelector = el.querySelector('select[name=value]');
+                valueTypeSelector.addEventListener('change', (e)=>{
+                    inputEl.classList.add('hidden');
                     if (values[e.target.value] == ValueExact) {
-                        let inputEl = document.createElement('input');
-                        inputsEl.appendChild(inputEl);
-                        inputEl.type = 'number';
-                        inputEl.value = 0;
+                        inputEl.classList.remove('hidden');
                     }
                 })
+                if (value) {
+                    valueTypeSelector.value = value.type;
+                    inputEl.value = value.amount;
+                }
                 el.querySelector('select[name=value]').dispatchEvent(new Event('change'));
             }
-            function generateNewActionsNode(parentEl) {
+
+            function generateNewActionsNode(parentEl, action) {
                 let el = actionsTemplate.cloneNode(true);
                 parentEl.appendChild(el);
                 let detailsEl = el.querySelector('div.details');
                 let removeButton = el.querySelector('button');
                 removeButton.addEventListener('click', ()=>el.parentElement.removeChild(el));
-                el.querySelector('select[name=action]').addEventListener('change', (e)=>{
+                let actionTypeSelector = el.querySelector('select[name=action]');
+                actionTypeSelector.addEventListener('change', (e)=>{
                     detailsEl.classList.add('hidden');
                     if (actions[e.target.value].prototype instanceof ActionBet) {
                         detailsEl.classList.remove('hidden');
                         let numberWrapper = detailsEl.querySelector('.numberWrapper');
                         let numberSelector = numberWrapper.querySelector('select[name=number]');
-                        let typeSelector = detailsEl.querySelector('select[name=type]');
-                        typeSelector.addEventListener('change', (e)=>{
+                        let betTypeSelector = detailsEl.querySelector('select[name=type]');
+                        betTypeSelector.addEventListener('change', (e)=>{
                             numberWrapper.classList.add('hidden');
                             numberSelector.value = 0;
                             removeChildren(numberSelector);
@@ -241,20 +324,74 @@
                             });
                             numberWrapper.classList.remove('hidden');
                         });
-                        typeSelector.dispatchEvent(new Event('change'));
-
+                        betTypeSelector.dispatchEvent(new Event('change'));
+                        let valueEl = detailsEl.querySelector('.valueWrapper');
+                        removeChildren(valueEl);
+                        generateNewValuesNode(valueEl);
                     }
                 })
-                el.querySelector('select[name=action]').dispatchEvent(new Event('change'));
+                if (action && action.type) {
+                    actionTypeSelector.value = action.type;
+                    detailsEl.classList.add('hidden');
+                    let numberWrapper = detailsEl.querySelector('.numberWrapper');
+                    let numberSelector = numberWrapper.querySelector('select[name=number]');
+                    let betTypeSelector = detailsEl.querySelector('select[name=type]');
+                    if (actions[action.type].prototype instanceof ActionBet) {
+                        detailsEl.classList.remove('hidden');
+                        betTypeSelector.addEventListener('change', (e)=>{
+                            numberWrapper.classList.add('hidden');
+                            numberSelector.value = 0;
+                            removeChildren(numberSelector);
+                            let availableNumbers = [];
+                            switch (e.target.value) {
+                                case 'Buy':
+                                case 'Place':
+                                case 'Odds':
+                                case 'LayOdds':
+                                    availableNumbers = [4,5,6,8,9,10];
+                                break;
+                                case 'Hard':
+                                    availableNumbers = [4,6,8,10];
+                                break;
+                                case 'Hop':
+                                    availableNumbers = hopNumbers;
+                                break;
+                                default:
+                                    return;
+                            }
+                            availableNumbers.forEach(n=>{
+                                numberSelector.appendChild(document.createElement('option')).innerText = n;
+                            });
+                            numberWrapper.classList.remove('hidden');
+                        });
+                        if (action.details && action.details.betType) {
+                            betTypeSelector.value = action.details.betType;
+                        }
+                        betTypeSelector.dispatchEvent(new Event('change'));
+                        if (action.details && action.details.number) {
+                            numberSelector.value = action.details.number;
+                        }
+                        if (action.details && action.details.amount) {
+                            let valueEl = detailsEl.querySelector('.valueWrapper');
+                            removeChildren(valueEl);
+                            generateNewValuesNode(valueEl, action.details.amount);
+                        }
+                    }
+                } else {
+                    el.querySelector('select[name=action]').dispatchEvent(new Event('change'));
+                }
             }
 
-            function generateNewRuleBlock(parentEl) {
+            function generateNewRuleBlock(parentEl, rule) {
+                rule = rule || {condition: null, actions: []};
                 let ruleEl = parentEl.appendChild(ruleTemplate.cloneNode(true));
                 let buttonsEl = ruleEl.querySelector('.buttons');
-                generateNewConditionsNode(ruleEl);
+                generateNewConditionsNode(ruleEl, rule.condition);
                 let actionsEl = ruleEl.appendChild(document.createElement('div'));
                 actionsEl.classList.add('actions');
-                generateNewActionsNode(actionsEl);
+                rule.actions.forEach(action=>{
+                    generateNewActionsNode(actionsEl, action);
+                })
                 // Move remove button to the end of the div
                 ruleEl.appendChild(buttonsEl);
                 buttonsEl.querySelector('button.remove').addEventListener('click', ()=>{
@@ -278,12 +415,12 @@
                 rulesEl.querySelectorAll('div.rule').forEach(el=>{
                     rules.push(parseRule(el));
                 });
-                resultEl.innerText = JSON.stringify(rules, null, 2);
+                resultEl.innerText = JSON.stringify({rules: rules}, null, 2);
             }
 
             function parseRule(el) {
                 let rule = {
-                    condition: parseCondition(el.querySelector('div.condition')),
+                    condition: parseCondition(el.querySelector(':scope > div.condition')),
                     actions: []
                 };
                 el.querySelectorAll('div.actions div.action').forEach(actionEl=>{
@@ -295,28 +432,27 @@
             function parseCondition(conditionEl) {
                 let type = conditionEl.querySelector('select').value;
                 let subconditions = [];
-                conditionEl.querySelectorAll('.subconditions div.condition').forEach(el=>subconditions.push(parseCondition(el)));
+                conditionEl.querySelectorAll(':scope > .subconditions > div.condition').forEach(el=>subconditions.push(parseCondition(el)));
                 let values = [];
-                conditionEl.querySelectorAll('.subconditions div.value').forEach(el=>values.push(parseValue(el)));
+                conditionEl.querySelectorAll(':scope > .subconditions > div.value').forEach(el=>values.push(parseValue(el)));
                 let condition = {type: type};
                 if (values.length > 0) {
                     condition.values = values;
                 }
                 if (subconditions.length > 0) {
-                    condition.conditions = conditions;
+                    condition.conditions = subconditions;
                 }
                 return condition;
             }
 
             function parseValue(valueEl) {
                 let type = valueEl.querySelector('select').value;
-                let inputs = [];
-                valueEl.querySelectorAll('span.inputs input').forEach(el=>inputs.push(el.value));
+                let amountEl = valueEl.querySelector('input[name=amount]');
                 value = {
                     type: type
                 };
-                if (inputs.length > 0) {
-                    value.inputs = inputs;
+                if (!amountEl.classList.contains('hidden')) {
+                    value.amount = amountEl.value;
                 }
                 return value;
             }
@@ -347,6 +483,17 @@
                     details.amount = parseValue(valueEl);
                 }
                 return details;
+            }
+
+            document.body.querySelector('div.import button').addEventListener('click', ()=>{
+                importRules(document.body.querySelector('div.import textarea').value);
+            });
+
+            function importRules(json) {
+                rulesEl.querySelectorAll('div.rule').forEach(el=>el.parentElement.removeChild(el));
+                let strategy = JSON.parse(json);
+                strategy.rules.forEach(rule=>generateNewRuleBlock(rulesEl, rule));
+                
             }
             </script>
     </body>
