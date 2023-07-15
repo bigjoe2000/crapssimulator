@@ -30,6 +30,8 @@
         </style>
     </head>
     <body>
+        <p>Create rules to define a strategy</p>
+        <p>When the bet number is set to Point, it means that you are making the bet against the point. If you select Point for a hardway, the bet will only work if the Point can occur as a hardway. If the bet is Hop, it will make as many bets as possible to cover all combinations of the Point.</p>
         <div class="rules">
             <button class="addRule">New Rule</button>
 
@@ -197,7 +199,7 @@
 
             generateNewValuesNode(actionsTemplate.querySelector('.valueWrapper'));
 
-            const hopNumbers = [];
+            const hopNumbers = [-1];
             for (let i = 1; i < 7; i++) {
                 for (let j = i; j < 7; j++) {
                     hopNumbers.push('' + i + j);
@@ -294,10 +296,10 @@
                                 case 'Place':
                                 case 'Odds':
                                 case 'LayOdds':
-                                    availableNumbers = [4,5,6,8,9,10];
+                                    availableNumbers = [-1,4,5,6,8,9,10];
                                 break;
                                 case 'Hard':
-                                    availableNumbers = [4,6,8,10];
+                                    availableNumbers = [-1,4,6,8,10];
                                 break;
                                 case 'Hop':
                                     availableNumbers = hopNumbers;
@@ -306,7 +308,13 @@
                                     return;
                             }
                             availableNumbers.forEach(n=>{
-                                numberSelector.appendChild(document.createElement('option')).innerText = n;
+                                if (n == -1) {
+                                    let optionEl = numberSelector.appendChild(document.createElement('option'));
+                                    optionEl.innerText = 'Point';
+                                    optionEl.value = n;
+                                } else {
+                                    numberSelector.appendChild(document.createElement('option')).innerText = n;
+                                }
                             });
                             numberWrapper.classList.remove('hidden');
                         });
