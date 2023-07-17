@@ -37,7 +37,7 @@ class Player {
 
     bet(bet) {
         if (this.bankroll >= bet.betAmount) {
-            this.bankroll -= bet.betAmount;
+            this.bankroll -= (bet.betAmount);
             this.betsOnTable.push(bet)  
             // TODO: make sure this only happens if that bet isn't on the table, otherwise wager amount gets updated
             this.totalBetAmount += bet.betAmount;
@@ -48,7 +48,7 @@ class Player {
         let idx = this.betsOnTable.indexOf(bet);
         if (idx > -1) {
             this.bankroll += bet.betAmount;
-            this.totalBetAmount -= bet.betAmount;
+            this.totalBetAmount -= (bet.betAmount);
             this.betsOnTable.splice(idx, 1);
         }
     }
@@ -65,12 +65,8 @@ class Player {
     }
 
     remove(name, subname='') {
-        for (let i = this.betsOnTable.length - 1; i >= 0; i--) {
-            let bet = this.betsOnTable[i];
-            if (bet.name == name && bet.subname == subname) {
-                this.betsOnTable.splice(i, 1);
-            };
-        }
+        let betsToRemove = this.betsOnTable.filter(b=>{b.name == name && (!subname || subname == b.subname)});
+        betsToRemove.forEach(b=>this.removeBetByObject(b));
     }
 
     addStrategyBets(table, unit, info) {
@@ -86,7 +82,7 @@ class Player {
             [betStatus, winAmount] = b.updateBet(table, dice);
         
             if (betStatus == 'win') {
-                this.bankroll += winAmount + b.betAmount;
+                this.bankroll += winAmount + b.betAmount - b.commissionAmount;
                 this.totalBetAmount -= b.betAmount;
                 this.betsOnTable.splice(i, 1);
                 if (verbose) {
@@ -455,8 +451,6 @@ class Bet {
         Numbers to roll that cause this bet to lose
     payoutratio : float
         Ratio that bet pays out on a win
-    commission: float
-        Commission paid to make a bet
     offOnComeOut : boolean
         The bet is not working on the come out roll
     comeOutRollPush : boolean
@@ -471,14 +465,19 @@ class Bet {
     winning_numbers = [];
     losing_numbers = [];
     payoutratio = 1;
-    commission = 0;
     offOnComeOut = false;
     comeOutRollPush = false;
+    commissionAmount = 0;
 
     // TODO: add whether bet can be removed
 
     constructor(betAmount) {
         this.betAmount = betAmount;
+    }
+
+    // Use this method to set commission
+    setCommission(percent) {
+        this.commissionAmount = this.commission <= 0 ? 0 : Math.max(Math.floor(this.betAmount * percent), 1);
     }
 
     updateBet(table, dice) {
@@ -493,11 +492,7 @@ class Bet {
         }
         if (this.winning_numbers.includes(dice.total)) {
             status = 'win';
-            let commissionAmount = 0;
-            if (this.commission > 0) {
-                commissionAmount = Math.max(Math.floor(this.betAmount * this.commission), 1);
-            }
-            win_amount = this.payoutratio * (this.betAmount - commissionAmount);
+            win_amount = this.payoutratio * (this.betAmount - this.commissionAmount);
         } else if (this.losing_numbers.includes(dice.total)) {
             status = 'lose';
         }
@@ -622,7 +617,6 @@ class Buy extends Bet {
         super(betAmount);
         this.name = 'Buy';
         this.subname = number;
-        this.commission = 0.05;
         this.winning_numbers = [number];
         this.losing_numbers = [7];
         this.offOnComeOut = true;
@@ -634,6 +628,7 @@ class Buy extends Bet {
         } else if (number == 6 || number == 8) {
             this.payoutratio = 6 / 5;
         }
+        this.setCommission(0.05);
     }
     updateBet(table, dice_object) {
         // buy bets are inactive when point is "Off"
@@ -923,7 +918,24 @@ class Strategy {
     maxShooters = 0; // 0 for no limit
     maxBankroll = 0; // 0 for no limit
     stopped = false;
-    strategyBets = [];
+    rules = [];
+
+
+    static fromObj(obj) {
+        let strategy = new this();
+        strategy.rules = obj.rules;
+        strategy.name = obj.name;
+        return strategy;
+    }
+
+    reset() {
+        this.info = {};
+        this.unit = 5;
+        this.maxRolls = 0; // 0 for no limit
+        this.maxShooters = 0; // 0 for no limit
+        this.maxBankroll = 0; // 0 for no limit
+        this.stopped = false;
+    }
 
     isStopped() {
         return this.stopped;
@@ -946,16 +958,247 @@ class Strategy {
     }
 
     update(player, table, unit, strat_info) {
-        if (this.isStopped()) {
+        this.rules.forEach(rule=>{
+            if (evaluateCondition(rule.condition, player, table)) {
+                rule.actions.forEach(action=>{
+                    actions[action.type].takeAction(player, table, action.details)
+                })
+            }
+        })
+    }
+
+}
+
+class Condition {
+    isTrue(player, table) {
+        return true;
+    }
+}
+
+class ConditionPointOn extends Condition {
+    static isTrue(player, table) {
+        return table.hasPoint();
+    }
+}
+
+class ConditionPointOff extends Condition {
+    static isTrue(player, table) {
+        return !table.hasPoint();
+    }
+}
+
+class ConditionCompare extends Condition {}
+
+class ConditionWrapper extends Condition {}
+
+class ConditionEquals extends ConditionCompare {
+    static isTrue(value1, value2) {
+        return value1 == value2;
+    }
+}
+
+class ConditionNotEquals extends ConditionCompare {
+    static isTrue(value1, value2) {
+        return value1 != value2;
+    }
+}
+
+class ConditionMoreThan extends ConditionCompare {
+    static isTrue(value1, value2) {
+        return value1 > value2;
+    }
+}
+
+class ConditionLessThan extends ConditionCompare {
+    static isTrue(value1, value2) {
+        return value1 < value2;
+    }
+}
+
+class ConditionAnd extends ConditionWrapper {
+    isTrue(player, table) {
+        for (let i = 0; i < this.conditions.length; i++) {
+            if (!this.conditions[i].isTrue(player, table))
+                return false;
+        }
+        return true;
+    }
+}
+
+class ConditionOr extends ConditionWrapper {
+    isTrue(player, table) {
+        for (let i = 0; i < this.conditions.length; i++) {
+            if (this.isTrue(this.conditions[i]))
+                return true;
+        }
+        return false;
+    }
+}
+
+function evaluateCondition(conditionObj, player, table) {
+    let conditionClass = conditions[conditionObj.type];
+    if (!conditionClass) {
+        console.log('Bad condition class:' + conditionObj.type);
+        return;
+    }
+    if (conditionClass.prototype instanceof ConditionAnd) {
+        for (let i = 0; i < conditionObj.conditions.length; i++) {
+            if (!evaluateCondition(conditionObj.conditions[i], player, table))
+                return false;
+        }
+        return true;
+    } else if (conditionClass.prototype instanceof ConditionOr) {
+        for (let i = 0; i < conditionObj.conditions.length; i++) {
+            if (evaluateCondition(conditionObj.conditions[i], player, table))
+                return true;
+        }
+        return false;
+    } else if (conditionClass.prototype instanceof ConditionCompare) {
+        if (!conditionObj.values || conditionObj.values.length != 2) {
+            console.log('Bad values length');
             return;
         }
-        this.strategyBets.forEach(b=>b.update(table, player));
+        let values = [];
+        conditionObj.values.forEach(v=>values.push(evaluateValue(v, player, table)));
+        return conditionClass.isTrue(values[0], values[1], player, table);
+    } else if (conditionClass.prototype instanceof Condition) {
+        return conditionClass.isTrue(player, table);
+    } else {
+        console.log('Could not find superclass for:' + conditionObj.type);
+        return false;
     }
+}
 
-    addBet(strategyBet) {
-        this.strategyBets.push(strategyBet);
+
+class Value {}
+
+class ValueExact extends Value {}
+
+class ValuePoint extends Value {
+    static get(player, table) {
+        return table.point || 0;
     }
+}
 
+class ValueShooterPoints extends Value{
+    static get(player, table) {
+        return player.shooterPoints;
+    }
+}
+
+class ValueShooterNaturals extends Value {
+    static get(player, table) {
+        return player.shooterNaturals;
+    }
+}
+
+class ValueNumberOfShooters extends Value {
+    static get(player, table) {
+        return player.numberOfShooters;
+    }
+}
+
+class ValueLastRoll extends Value {
+    static get(player, table) {
+        return player.lastRoll;
+    }
+}
+
+class ValueBankroll extends Value {
+    static get(player, table) {
+        return player.bankroll;
+    }
+}
+
+class ValueBetsOnTable extends Value {
+    static get(player, table) {
+        return player.totalBetAmount;
+    }
+}
+
+function evaluateValue(value, player, table) {
+    let valueClass = values[value.type];
+    switch (valueClass.name) {
+        case 'ValueExact':
+            return parseInt(value.amount);
+        default:
+            return valueClass.get(player, table);
+    }
+}
+
+class Action {}
+
+class ActionBet extends Action {}
+
+class ActionStopBetting extends Action {
+    static takeAction(player) {
+        player.bettingStrategy.stopped = true;
+    }
+}
+
+class ActionMakeBet extends ActionBet {
+    static takeAction(player, table, action) {
+        let number = parseInt(action.number) || 0;
+        if (number == -1)
+            number = table.point;
+        if (!player.getBet(action.betType, number))
+            player.bet(new bets[action.betType](evaluateValue(action.amount, player, table), number));
+    }
+}
+
+class ActionRemoveBet extends ActionBet {
+    static takeAction(player, table, action) {
+        let number = parseInt(action.number) || 0;
+        if (number == -1) {
+            number = table.point;
+        }
+        let bet = player.getBet(action.betType, number);
+        if (bet) {
+            player.removeBetByObject(bet);
+        }
+    }
+}
+
+const conditions = {
+    ConditionPointOff : ConditionPointOff,
+    ConditionPointOn : ConditionPointOn,
+    ConditionEquals : ConditionEquals,
+    ConditionNotEquals : ConditionNotEquals,
+    ConditionMoreThan : ConditionMoreThan,
+    ConditionLessThan : ConditionLessThan,
+    ConditionAnd : ConditionAnd,
+    ConditionOr : ConditionOr
+}
+
+const values = {
+    ValueExact : ValueExact,
+    ValuePoint : ValuePoint,
+    ValueShooterPoints : ValueShooterPoints,
+    ValueShooterNaturals : ValueShooterNaturals,
+    ValueNumberOfShooters : ValueNumberOfShooters,
+    ValueLastRoll : ValueLastRoll
+}
+
+const actions = {
+    ActionMakeBet : ActionMakeBet,
+    ActionRemoveBet : ActionRemoveBet,
+    ActionStopBetting : ActionStopBetting
+}
+
+const bets = {
+    Pass : Pass,
+    DontPass : DontPass,
+    Buy : Buy,
+    Hop : Hop,
+    Come : Come,
+    DontCome : DontCome,
+    Place : Place,
+    Field : Field,
+    Hard : Hard,
+    Odds : Odds,
+    LayOdds : LayOdds,
+    AnyCraps : AnyCraps,
+    AnySeven : AnySeven
 }
 
 class passline extends Strategy {

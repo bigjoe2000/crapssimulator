@@ -1,7 +1,6 @@
 <html>
     <head>
         <script src="craps.js"></script>
-        <script src="conditions.js"></script>
         <script>
             removeChildren = function(el, leaveSome) {
                 let n = leaveSome || 0;
@@ -48,35 +47,56 @@
                     "rules": [
                       {
                         "condition": {
-                          "type": "ConditionEquals",
-                          "values": [
-                            {
-                              "type": "ValuePoint"
-                            },
-                            {
-                              "type": "ValueExact",
-                              "amount": "5"
-                            }
-                          ]
+                          "type": "ConditionPointOff"
                         },
                         "actions": [
                           {
                             "type": "ActionMakeBet",
                             "details": {
-                              "betType": "Pass",
+                              "betType": "DontPass",
                               "amount": {
                                 "type": "ValueExact",
                                 "amount": "15"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "condition": {
+                          "type": "ConditionPointOn"
+                        },
+                        "actions": [
+                          {
+                            "type": "ActionMakeBet",
+                            "details": {
+                              "betType": "LayOdds",
+                              "number": "-1",
+                              "amount": {
+                                "type": "ValueExact",
+                                "amount": "90"
                               }
                             }
                           },
                           {
                             "type": "ActionMakeBet",
                             "details": {
-                              "betType": "Come",
+                              "betType": "Buy",
+                              "number": "4",
                               "amount": {
                                 "type": "ValueExact",
-                                "amount": "15"
+                                "amount": "21"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ActionMakeBet",
+                            "details": {
+                              "betType": "Buy",
+                              "number": "10",
+                              "amount": {
+                                "type": "ValueExact",
+                                "amount": "21"
                               }
                             }
                           },
@@ -90,6 +110,71 @@
                                 "amount": "20"
                               }
                             }
+                          },
+                          {
+                            "type": "ActionMakeBet",
+                            "details": {
+                              "betType": "Place",
+                              "number": "9",
+                              "amount": {
+                                "type": "ValueExact",
+                                "amount": "20"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ActionMakeBet",
+                            "details": {
+                              "betType": "Place",
+                              "number": "6",
+                              "amount": {
+                                "type": "ValueExact",
+                                "amount": "24"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ActionMakeBet",
+                            "details": {
+                              "betType": "Place",
+                              "number": "8",
+                              "amount": {
+                                "type": "ValueExact",
+                                "amount": "24"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ActionRemoveBet",
+                            "details": {
+                              "betType": "Place",
+                              "number": "-1",
+                              "amount": {
+                                "type": "ValueExact",
+                                "amount": ""
+                              }
+                            }
+                          },
+                          {
+                            "type": "ActionRemoveBet",
+                            "details": {
+                              "betType": "Buy",
+                              "number": "-1",
+                              "amount": {
+                                "type": "ValueExact",
+                                "amount": ""
+                              }
+                            }
+                          },
+                          {
+                            "type": "ActionMakeBet",
+                            "details": {
+                              "betType": "Come",
+                              "amount": {
+                                "type": "ValueExact",
+                                "amount": "15"
+                              }
+                            }
                           }
                         ]
                       }
@@ -98,6 +183,8 @@
 </textarea>
         </div>
         <hr>
+        <button class="runsim">Run Once</button>
+        <div class="sim"></div>
 
 
         <div class="templates hidden">
@@ -136,47 +223,7 @@
         </div>
 
         <script>
-            const conditions = {
-                ConditionPointOff : ConditionPointOff,
-                ConditionPointOn : ConditionPointOn,
-                ConditionEquals : ConditionEquals,
-                ConditionNotEquals : ConditionNotEquals,
-                ConditionMoreThan : ConditionMoreThan,
-                ConditionLessThan : ConditionLessThan,
-                ConditionAnd : ConditionAnd,
-                ConditionOr : ConditionOr
-            }
 
-            const values = {
-                ValueExact : ValueExact,
-                ValuePoint : ValuePoint,
-                ValueShooterPoints : ValueShooterPoints,
-                ValueShooterNaturals : ValueShooterNaturals,
-                ValueNumberOfShooters : ValueNumberOfShooters,
-                ValueLastRoll : ValueLastRoll
-            }
-
-            const actions = {
-                ActionMakeBet : ActionMakeBet,
-                ActionRemoveBet : ActionRemoveBet,
-                ActionStopBetting : ActionStopBetting
-            }
-
-            const bets = {
-                Pass : Pass,
-                DontPass : DontPass,
-                Buy : Buy,
-                Hop : Hop,
-                Come : Come,
-                DontCome : DontCome,
-                Place : Place,
-                Field : Field,
-                Hard : Hard,
-                Odds : Odds,
-                LayOdds : LayOdds,
-                AnyCraps : AnyCraps,
-                AnySeven : AnySeven
-            }
 
             const conditionsTemplate = document.querySelector('.templates div.condition');
             const valuesTemplate = document.querySelector('.templates div.value');
@@ -308,12 +355,10 @@
                                     return;
                             }
                             availableNumbers.forEach(n=>{
+                                let optionEl = numberSelector.appendChild(document.createElement('option'));
+                                optionEl.value = n;
                                 if (n == -1) {
-                                    let optionEl = numberSelector.appendChild(document.createElement('option'));
                                     optionEl.innerText = 'Point';
-                                    optionEl.value = n;
-                                } else {
-                                    numberSelector.appendChild(document.createElement('option')).innerText = n;
                                 }
                             });
                             numberWrapper.classList.remove('hidden');
@@ -342,10 +387,10 @@
                                 case 'Place':
                                 case 'Odds':
                                 case 'LayOdds':
-                                    availableNumbers = [4,5,6,8,9,10];
+                                    availableNumbers = [-1,4,5,6,8,9,10];
                                 break;
                                 case 'Hard':
-                                    availableNumbers = [4,6,8,10];
+                                    availableNumbers = [-1,4,6,8,10];
                                 break;
                                 case 'Hop':
                                     availableNumbers = hopNumbers;
@@ -354,7 +399,11 @@
                                     return;
                             }
                             availableNumbers.forEach(n=>{
-                                numberSelector.appendChild(document.createElement('option')).innerText = n;
+                                let optionEl = numberSelector.appendChild(document.createElement('option'));
+                                optionEl.value = n;
+                                if (n == -1) {
+                                    optionEl.innerText = 'Point';
+                                }
                             });
                             numberWrapper.classList.remove('hidden');
                         });
@@ -404,12 +453,12 @@
             document.body.querySelector('button.generateResults').addEventListener('click', parseRules);
 
             function parseRules() {
-                removeChildren(resultEl);
                 let rules = [];
                 rulesEl.querySelectorAll('div.rule').forEach(el=>{
                     rules.push(parseRule(el));
                 });
-                resultEl.innerText = JSON.stringify({rules: rules}, null, 2);
+                document.body.querySelector('div.import textarea').value = JSON.stringify({rules: rules}, null, 2);
+                return {rules: rules};
             }
 
             function parseRule(el) {
@@ -489,6 +538,23 @@
                 strategy.rules.forEach(rule=>generateNewRuleBlock(rulesEl, rule));
                 
             }
+
+            document.body.querySelector('button.runsim').addEventListener('click', ()=>{
+                let strategy = parseRules();
+                strategy.name = 'From Json';
+                let sim = new Simulation(1, 100, 10, 1000, [Strategy.fromObj(strategy)]);
+                let logsEl = document.body.querySelector('div.sim');
+                removeChildren(logsEl);
+                sim.printout();
+                let line;
+                while (logs.length) {
+                    let el = document.createElement('div');
+                    el.innerText = logs.shift();
+                    logsEl.appendChild(el);
+                };
+                return;
+
+            })
             </script>
     </body>
 </html>
