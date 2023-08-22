@@ -1523,6 +1523,94 @@ class mike_harris_15 extends Strategy {
             if (table.point % 2 == 0 && !player.getBet("Hard", table.point)) {
                 player.bet(new Hard(16, table.point));
             }
+            
+            // Count up the odds bets (which in this strategy are the Come bets)
+            let oddsAtRisk = 0;
+            player.betsOnTable.filter(b=>b.name == 'Odds').forEach(b=>oddsAtRisk += b.betAmount);
+            let hopAmount = parseInt(oddsAtRisk/15) - 3;
+
+            if (hopAmount > 0) {
+                player.bet(new Hop(hopAmount, "16"));
+                player.bet(new Hop(hopAmount, "25"));
+                player.bet(new Hop(hopAmount, "34"));
+            }
+
+            // Add a come bet every roll
+            player.bet(new Come(unit));
+
+
+        }
+    }
+}
+
+class mike_harris_15_all_hardways extends Strategy {
+    dontOddsStrategy = new dontpass_odds('345');
+    update(player, table, unit=5, strategyInfo=null) {
+        if (strategyInfo && strategyInfo['stopped'])
+            return strategyInfo;
+
+        let startingMultipier = 1 + 0.6 * (.95 ** table.numberOfShooters);
+        
+        if (player.startingBankroll * startingMultipier < player.bankroll) {
+            log("Strategy Mike Harris 15 stopping after " + table.numberOfShooters + " shooters because it hit:" + startingMultipier + " of starting bankroll");
+            return {stopped: true};
+        }
+        unit = 15;
+        // dont pass bet with max odds laid
+        this.dontOddsStrategy.update(player, table, unit)
+
+        if (table.hasPoint()) {
+            // Remove any place bets that are now on the point
+            let placePointBet = player.getBet("Place", table.point);
+            if (placePointBet) {
+                player.removeBetByObject(placePointBet);
+            }
+            // Remove any buy bets that are now on the point
+            let buyPointBet = player.getBet("Buy", table.point);
+            if (buyPointBet) {
+                player.removeBetByObject(buyPointBet);
+            }
+            // Odds on any come bet that has established a point
+            player.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
+                if (!player.getBet("Odds", b.subname)) {
+                    let oddsAmount = unit;
+                    if (["4", "10"].indexOf(b.subname) > -1) {
+                        oddsAmount = 45;
+                    } else if (["6", "8"].indexOf(b.subname) > -1) {
+                        oddsAmount = 35;
+                    } else {
+                        oddsAmount = 30;
+                    }
+                    player.bet(new Odds(oddsAmount, b.subname));
+                }
+            });
+            // place inside numbers (unless odds exists on that number)
+            [5, 9].forEach(n=>{
+                if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Place", n)) {
+                    player.bet(new Place(20, n));
+                }
+            });
+            [6, 8].forEach(n=>{
+                if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Place", n)) {
+                    player.bet(new Place(24, n));
+                }
+            });
+            [4, 10].forEach(n=>{
+                if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Buy", n)) {
+                    player.bet(new Buy(21, n));
+                }
+            });
+            // If point is hard way, bet that hard way
+            if (table.point % 2 == 0 && !player.getBet("Hard", table.point)) {
+                player.bet(new Hard(16, table.point));
+            }
+            
+            // bet 3 on rest (or all) of the hardways
+            [4,6,8,10].forEach(n=>{
+                if (!player.getBet("Hard", n)) {
+                    player.bet(new Hard(3, n));
+                }
+            })
 
             // Count up the odds bets (which in this strategy are the Come bets)
             let oddsAtRisk = 0;
@@ -1571,7 +1659,9 @@ class frank_dontpassdontcome_odds_68 extends Strategy {
     }
 }
 
+class custom extends Strategy {
 
+}
 
 
 // dice = new FakeDice([[5,5],[5,4],[5,3],[5,2]]);
