@@ -22,6 +22,7 @@
                 mike_harris_15_all_hardways : mike_harris_15_all_hardways,
                 pass_dontpass : pass_dontpass,
                 frank_dontpassdontcome_odds_68: frank_dontpassdontcome_odds_68,
+                custom: custom
             }
 
             removeChildren = function(el, leaveSome) {
@@ -51,8 +52,12 @@
         </style>
     </head>
     <body>
-        <div><label>Strategies to test</label><select name="strategies" multiple>
-        </select><small>Shift click to select multiple</small></div>
+        <div><label>Strategies to test</label>
+            <div class="strategies">
+
+            </div>
+        </div>
+        <hr>
         <div><label>Number of Runs</label><input type="number" name="numberOfRuns" value="2000"></div>
         <div><label>Max Rolls</label><input type="number" name="maxRolls" value="100"></div>
         <div><label>Max Shooters</label><input type="number" name="maxShooters" value="15"></div>
@@ -62,15 +67,40 @@
         <div class="status"></div>
         <div class="printout"></div>
         <div class="chart"></div>
+        <hr>
+        <p>Update the contents of the textarea and select custom strategy above to see how it performs.</p>
+        <textarea class="custom" placeholder="Enter the contents of the update method" rows="10" cols="80"></textarea>
         <script>
         document.querySelector('button').addEventListener('click', setItUp);
-        let strategiesEl = document.querySelector('select[name=strategies]');
+        let strategiesEl = document.querySelector('div.strategies');
         let logEl = document.querySelector('div.printout');
         let statusEl = document.querySelector('div.status');
 
         Object.keys(strategiesAvailable).forEach(s=>{
-            let optionEl = strategiesEl.appendChild(document.createElement('option'));
-            optionEl.innerText = s;
+            let wrapperEl = document.createElement('div');
+            strategiesEl.appendChild(wrapperEl);
+
+            let el = document.createElement('input');
+            el.type="checkbox";
+            el.value = s;
+            wrapperEl.appendChild(el);
+            el = document.createElement('span');
+            el.innerText = s + ' - ' + strategiesAvailable[s].description();
+            wrapperEl.appendChild(el);
+            if (s != 'custom') {
+                el = document.createElement('button');
+                el.innerText = 'Edit Custom';
+                wrapperEl.appendChild(el);
+                el.addEventListener('click', ()=>{
+                    let lines = new strategiesAvailable[s]().update.toString().split('\n');
+                    // remove first line
+                    lines.splice(0,1);
+                    // remove last line
+                    lines.splice(lines.length-1,1);
+                    document.querySelector('textarea.custom').value = lines.join('\n');
+                })
+            }
+
         }) 
 
         function setItUp() {
@@ -85,10 +115,13 @@
         function doIt() {
             let title = 'Strategy Comparison ' + new Date().toString() + ' ';
             let strategies = [];
-            let strategyOptions = strategiesEl.selectedOptions;
-            for (let i = 0; i < strategyOptions.length; i++) {
-                strategies.push(new strategiesAvailable[strategyOptions[i].value]());
-            }
+            strategiesEl.querySelectorAll('input[type=checkbox]:checked').forEach(el=>{
+                let text = null;
+                if (el.value == 'custom') {
+                    text = document.querySelector('textarea.custom').value;
+                }
+                strategies.push(new strategiesAvailable[el.value](text));
+            });
 
             if (strategies.length == 0) {
                 strategies = [new passline()];

@@ -920,12 +920,15 @@ class Strategy {
     stopped = false;
     rules = [];
 
-
     static fromObj(obj) {
         let strategy = new this();
         strategy.rules = obj.rules;
         strategy.name = obj.name;
         return strategy;
+    }
+
+    description() {
+        return 'Not set';
     }
 
     reset() {
@@ -1202,6 +1205,7 @@ const bets = {
 }
 
 class passline extends Strategy {
+    static description() {return 'Bet 5 on the Pass'};
     update(player, table, unit, strat_info) {
         if (!table.hasPoint() && !player.getBet("Pass"))
         player.bet(new Pass(unit));
@@ -1214,6 +1218,7 @@ class passline_odds extends Strategy {
         this.win_mult = win_mult;
         this.passlineStrategy = new passline();
     }
+    static description() {return 'Bet 5 on the Pass + 1x odds'};
     update(player, table, unit=5, strat_info=null) {
         this.passlineStrategy.update(player, table, unit);
         if (!table.hasPoint())
@@ -1228,6 +1233,7 @@ class passline_odds extends Strategy {
 }
 
 class passline_maxodds extends Strategy {
+    static description() {return 'Bet 5 on the Pass + 345x odds'};
     passlineOddsStrategy = new passline_odds('345');
     update(player, table, unit=5, strat_info=null) {
         this.passlineOddsStrategy.update(player, table, unit, strat_info);
@@ -1235,6 +1241,7 @@ class passline_maxodds extends Strategy {
 }
 
 class dontpass extends Strategy {
+    static description() {return 'Bet 5 on the DontPass'};
     update(player, table, unit=5, strat_info=null) {
         // Don't pass bet
         if (!table.hasPoint() && ! player.getBet("DontPass"))
@@ -1248,6 +1255,7 @@ class dontpass_odds extends Strategy {
         this.win_mult = win_mult;
         this.dontpassStrategy = new dontpass();
     }
+    static description() {return 'Bet 5 on the DontPass + 345x odds'};
     update(player, table, unit=5, strat_info=null) {
         // Assume that someone tries to win the `win_mult` times the unit on each bet, which corresponds
         // well to the max_odds on a table.
@@ -1264,6 +1272,7 @@ class dontpass_odds extends Strategy {
 }
 
 class place5689 extends Strategy {
+    static description() {return 'Place the 5/6/8/9 for $5 each'};
     update(player, table, unit=5, strat_info=null) {
         if (!table.hasPoint())
             return;
@@ -1277,6 +1286,7 @@ class place5689 extends Strategy {
 }
 
 class ironcross extends Strategy {
+    static description() {return 'Pass with 2x odds, place 5,6,8 and bet the field'};
     passStrategy = new passline();
     passOddsStrategy = new passline_odds(2);
 
@@ -1297,6 +1307,7 @@ class ironcross extends Strategy {
 }
 
 class hammerlock extends Strategy {
+    static description() {return 'Pass with no odds, Dontpass with 345x odds, mess around with place bets'};
     passStrategy = new passline();
     dontPassStrategy = new dontpass_odds('345');
 
@@ -1352,6 +1363,7 @@ class hammerlock extends Strategy {
 }
 
 class buy_4_10 extends Strategy {
+    static description() {return 'Buy the 4 and 10'};
     update(player, table, unit=5, strat_info=null) {
         if (!table.hasPoint()) {
             return;
@@ -1365,6 +1377,7 @@ class buy_4_10 extends Strategy {
 }
 
 class hardways extends Strategy {
+    static description() {return 'Bet all the hard ways'};
     update(player, table, unit=5, strat_info=null) {
         [4, 6, 8, 10].forEach(n=>{
             if (!player.getBet("Hard", n)) {
@@ -1375,6 +1388,7 @@ class hardways extends Strategy {
 }
 
 class pass_dontpass_horn12 extends Strategy {
+    static description() {return 'Pass and DontPass. Bet the Horn12 every roll. If it wins, bet 10x'};
     passStrategy = new passline();
     dontStrategy = new dontpass();
     update(player, table, unit=5, strat_info=null) {
@@ -1387,6 +1401,7 @@ class pass_dontpass_horn12 extends Strategy {
 }
 
 class pass_2come extends Strategy {
+    static description() {return 'Pass with 1x odds Place 2 come bets with 1x odds'};
     passOddsStrategy = new passline_odds();
     update(player, table, unit=5, strat_info=null) {
         this.passOddsStrategy.update(player, table, unit);
@@ -1402,6 +1417,7 @@ class pass_2come extends Strategy {
 }
 
 class pass_dontpass extends Strategy {
+    static description() {return 'Pass and DontPass'};
     passStrategy = new passline();
     dontStrategy = new dontpass();
     update(player, table, unit=5, strat_info=null) {
@@ -1411,6 +1427,8 @@ class pass_dontpass extends Strategy {
 }
 
 class mike_harris extends Strategy {
+    static description() {return 'DontPass with 345x lay. Always bet the Come. Place 5/6/8/9 at $5. Buy the 4/10 at $5. Use place bet winnings to cover come bet odds. Bet $5 Hardway only if it is a point. Hop the 7 once enough come bets are working.'};
+
     dontOddsStrategy = new dontpass_odds('345');
     update(player, table, unit=5, strat_info=null) {
         // dont pass bet with max odds laid
@@ -1463,6 +1481,8 @@ class mike_harris extends Strategy {
 }
 
 class mike_harris_15 extends Strategy {
+    static description() {return 'Same as Mike Harris, but with $15 bets ($20 Place/Buy). Also set stop condition'};
+
     dontOddsStrategy = new dontpass_odds('345');
     update(player, table, unit=5, strategyInfo=null) {
         if (strategyInfo && strategyInfo['stopped'])
@@ -1544,6 +1564,7 @@ class mike_harris_15 extends Strategy {
 }
 
 class mike_harris_15_all_hardways extends Strategy {
+    static description() {return 'Same as Mike Harris 15, but bet all the hardways for $3 ($16 if it is point)'};
     dontOddsStrategy = new dontpass_odds('345');
     update(player, table, unit=5, strategyInfo=null) {
         if (strategyInfo && strategyInfo['stopped'])
@@ -1632,6 +1653,7 @@ class mike_harris_15_all_hardways extends Strategy {
 }
 
 class frank_dontpassdontcome_odds_68 extends Strategy {
+    static description() {return '$50 on DontPass. $25 DontCome. Lay $100 in odds if point is 6/8. Lay $50 DontComeOdds on 6/8'};
     dontStrategy = new dontpass();
     update(player, table, unit=5, strat_info=null) {
         this.dontStrategy.update(player, table, 50);
@@ -1660,7 +1682,18 @@ class frank_dontpassdontcome_odds_68 extends Strategy {
 }
 
 class custom extends Strategy {
-
+    constructor(updateText) {
+        super();
+        this.updateText = updateText;
+    }
+    passStrategy = new passline();
+    passOddsStrategy = new passline_odds('345');
+    dontStrategy = new dontpass();
+    dontOddsStrategy = new dontpass_odds('345');
+    static description() {return 'Whatever customupdate you define in the text area below'};
+    update(player, table, unit=5, strat_info=null) {
+        eval(this.updateText);
+    }
 }
 
 
