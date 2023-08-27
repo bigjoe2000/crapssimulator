@@ -1216,11 +1216,11 @@ class passline_odds extends Strategy {
     constructor(win_mult=1) {
         super();
         this.win_mult = win_mult;
-        this.passlineStrategy = new passline();
+        this.passStrategy = new passline();
     }
     static description() {return 'Bet 5 on the Pass + 1x odds'};
     update(player, table, unit=5, strategyInfo=null) {
-        this.passlineStrategy.update(player, table, unit);
+        this.passStrategy.update(player, table, unit);
         if (!table.hasPoint())
             return;
         let passlineBet = player.getBet("Pass");
@@ -1234,9 +1234,9 @@ class passline_odds extends Strategy {
 
 class passline_maxodds extends Strategy {
     static description() {return 'Bet 5 on the Pass + 345x odds'};
-    passlineOddsStrategy = new passline_odds('345');
+    passOddsStrategy = new passline_odds('345');
     update(player, table, unit=5, strategyInfo=null) {
-        this.passlineOddsStrategy.update(player, table, unit, strategyInfo);
+        this.passOddsStrategy.update(player, table, unit, strategyInfo);
     }
 }
 
@@ -1253,14 +1253,14 @@ class dontpass_odds extends Strategy {
     constructor(win_mult=1) {
         super()
         this.win_mult = win_mult;
-        this.dontpassStrategy = new dontpass();
+        this.dontStrategy = new dontpass();
     }
     static description() {return 'Bet 5 on the DontPass + 345x odds'};
     update(player, table, unit=5, strategyInfo=null) {
         // Assume that someone tries to win the `win_mult` times the unit on each bet, which corresponds
         // well to the max_odds on a table.
         // For `win_mult` = "345", this assumes max of 3-4-5x odds
-        this.dontpassStrategy.update(player, table, unit);
+        this.dontStrategy.update(player, table, unit);
 
         if (table.hasPoint()) {
             let dontPassBet = player.getBet("DontPass");
@@ -1309,12 +1309,12 @@ class ironcross extends Strategy {
 class hammerlock extends Strategy {
     static description() {return 'Pass with no odds, Dontpass with 345x odds, mess around with place bets'};
     passStrategy = new passline();
-    dontPassStrategy = new dontpass_odds('345');
+    dontStrategy = new dontpass_odds('345');
 
 
     update(player, table, unit=5, strategyInfo=null) {
         this.passStrategy.update(player, table, unit);
-        this.dontPassStrategy.update(player, table, unit);
+        this.dontStrategy.update(player, table, unit);
 
         if (!strategyInfo || !table.hasPoint()) {
             strategyInfo = {"mode": "place68"};
