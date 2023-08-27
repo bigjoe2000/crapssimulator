@@ -49,6 +49,9 @@
                 width: 50%;
                 margin: auto;
             }
+            .hidden {
+                display: none;
+            }
         </style>
     </head>
     <body>
@@ -57,24 +60,27 @@
 
             </div>
         </div>
+        <button class="custom">Show/Hide Custom</button>
+       <div><textarea class="custom hidden" placeholder="Enter the contents of the update method" rows="10" cols="80"></textarea></div>
         <hr>
         <div><label>Number of Runs</label><input type="number" name="numberOfRuns" value="2000"></div>
         <div><label>Max Rolls</label><input type="number" name="maxRolls" value="100"></div>
         <div><label>Max Shooters</label><input type="number" name="maxShooters" value="15"></div>
         <div><label>Bankroll</label><input type="number" name="bankroll" value="1000"></div>
         <div><label>Debug one run only</label><input type="checkbox" name="once"></div>
-        <button>Do It</button>
+        <button class="doit">Do It</button>
         <div class="status"></div>
         <div class="printout"></div>
         <div class="chart"></div>
         <hr>
         <p>Update the contents of the textarea and select custom strategy above to see how it performs.</p>
-        <textarea class="custom" placeholder="Enter the contents of the update method" rows="10" cols="80"></textarea>
         <script>
-        document.querySelector('button').addEventListener('click', setItUp);
         let strategiesEl = document.querySelector('div.strategies');
         let logEl = document.querySelector('div.printout');
         let statusEl = document.querySelector('div.status');
+        let customEl = document.querySelector('textarea.custom');
+        document.querySelector('button.doit').addEventListener('click', setItUp);
+        document.querySelector('button.custom').addEventListener('click', ()=>customEl.classList.toggle('hidden'));
 
         Object.keys(strategiesAvailable).forEach(s=>{
             let wrapperEl = document.createElement('div');
@@ -85,19 +91,21 @@
             el.value = s;
             wrapperEl.appendChild(el);
             el = document.createElement('span');
-            el.innerText = s + ' - ' + strategiesAvailable[s].description();
+            el.innerText = s + ' - ' + strategiesAvailable[s].description() + ' ';
             wrapperEl.appendChild(el);
             if (s != 'custom') {
                 el = document.createElement('button');
                 el.innerText = 'Edit Custom';
                 wrapperEl.appendChild(el);
                 el.addEventListener('click', ()=>{
+                    customEl.classList.remove('hidden');
                     let lines = new strategiesAvailable[s]().update.toString().split('\n');
                     // remove first line
                     lines.splice(0,1);
                     // remove last line
                     lines.splice(lines.length-1,1);
-                    document.querySelector('textarea.custom').value = lines.join('\n');
+                    customEl.value = lines.join('\n');
+                    customEl.rows = lines.length;
                 })
             }
 
@@ -105,6 +113,7 @@
 
         function setItUp() {
             removeChildren(logEl);
+            logs = [];
 
             if (!document.querySelector('input[name=once]').checked) {
                 statusEl.innerText = 'Running Simulation';
@@ -116,11 +125,11 @@
             let title = 'Strategy Comparison ' + new Date().toString() + ' ';
             let strategies = [];
             strategiesEl.querySelectorAll('input[type=checkbox]:checked').forEach(el=>{
-                let text = null;
+                let strategy = new strategiesAvailable[el.value]();
+                strategies.push(strategy);
                 if (el.value == 'custom') {
-                    text = document.querySelector('textarea.custom').value;
+                    strategy.update = Function("player", "table", "unit", "strategyInfo", customEl.value);
                 }
-                strategies.push(new strategiesAvailable[el.value](text));
             });
 
             if (strategies.length == 0) {
