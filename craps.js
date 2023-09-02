@@ -1428,7 +1428,7 @@ class pass_dontpass extends Strategy {
 }
 
 class mike_harris extends Strategy {
-    static description() {return '$15 DontPass with 345x lay. $15 Come when point is on. Place 5/6/8/9 for $20/$24. Buy the 4/10 for $20(+1). Use place/buy bet winnings to cover come bet odds. Press come odds by $10 with every off/on. Bet $16 point Hardway, $3 on rest. Hop the 7 once enough come bets are working. Stop when new shooter comes out and bankroll is <$250 or > a degrading % of starting bankroll. Also stop if maxRolls or maxShooters is reached'};
+    static description() {return '$15 DontPass with 345x lay. $15 Come when point is on. Place 5/6/8/9 for $20/$24. Buy the 4/10 for $20(+1). Use place/buy bet winnings to cover come bet odds. Press come odds by $10 with every off/on. Bet $16 point Hardway, $3 on rest. Hop the 7 once enough come bets are working. Stop when new shooter comes out and bankroll is <$250 or > a degrading % of starting bankroll. Also stop if maxRolls or maxShooters is reached. On Come out roll, if bases loaded, hop the 7 for $16 each, hop 12/56 for $4, 11/66 for $2.'};
 
     dontOddsStrategy = new dontpass_odds('345');
     update(player, table, unit=5) {
@@ -1508,9 +1508,12 @@ class mike_harris extends Strategy {
                 }
             })
 
-            // Count up the odds bets (which in this strategy are the Come bets)
             let oddsAtRisk = 0;
-            player.betsOnTable.filter(b=>b.name == 'Odds').forEach(b=>oddsAtRisk += b.betAmount);
+            player.betsOnTable.filter(b=>b.name == 'Odds' || b.name == 'Buy').forEach(b=>{
+                if (b.name == 'Buy') oddsAtRisk += b.betAmount;
+                b.offOnComeOut = true;
+            });
+
             let hopAmount = parseInt(oddsAtRisk/15) - 3;
 
             if (hopAmount > 0) {
@@ -1521,6 +1524,37 @@ class mike_harris extends Strategy {
 
             // Add a come bet every roll
             player.bet(new Come(unit));
+        } else {
+             // Odds on any come bet that has established a point
+             player.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
+                if (!player.getBet("Odds", b.subname)) {
+                    let oddsAmount = unit;
+                    if (["4", "10"].indexOf(b.subname) > -1) {
+                        oddsAmount = 45;
+                    } else if (["6", "8"].indexOf(b.subname) > -1) {
+
+                        // Press the odds $10 for every time we've won
+                        oddsAmount = Math.min(75, 35 + (player.strategyInfo.currentShooter.betsWon.filter(bw=>bw.name=='Odds' && bw.subname==b.subname).length * 10));
+                    } else {
+                        oddsAmount = Math.min(60, 30 + (player.strategyInfo.currentShooter.betsWon.filter(bw=>bw.name=='Odds' && bw.subname==b.subname).length * 10));
+                    }
+                    player.bet(new Odds(oddsAmount, b.subname));
+                }
+            });
+            // Count up the odds bets (which in this strategy are the Come bets)
+            let numbersCovered = player.betsOnTable.filter(b=>b.name == 'Odds' || b.name == 'Buy').length;
+            
+            if (numbersCovered > 5) {
+                // Enough numbers are covered, let's go for a $48 hop of 7 and $12 on horns
+                player.bet(new Hop(16, "16"));
+                player.bet(new Hop(16, "25"));
+                player.bet(new Hop(16, "34"));
+                player.bet(new Hop(4, "12"));
+                player.bet(new Hop(4, "56"));
+                player.bet(new Hop(2, "11"));
+                player.bet(new Hop(2, "66"));
+                player.betsOnTable.filter(b=>b.name == 'Odds' || b.name == 'Buy').forEach(b=>b.offOnComeOut = false);
+            }
         }
     }
 }
