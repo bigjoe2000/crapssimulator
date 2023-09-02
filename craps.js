@@ -212,6 +212,7 @@ class Table {
         this.numberOfShooters = 1;
         this.shooterNaturals = 0;
         this.shooterPoints = 0;
+        this.shooterRolls = 0;
         this.rollDistribution = Array(13).fill(0);
     }
 
@@ -330,10 +331,12 @@ class Table {
         /**
          * update table attributes based on previous dice roll
          */
-        this.passRolls += 1
+        this.passRolls += 1;
+        this.shooterRolls += 1;
         if (this.hasPoint()) {
             if (dice.total == 7) {
                 this.numberOfShooters += 1;
+                this.shooterRolls = 0;
                 this.shooterNaturals = 0;
                 this.shooterPoints = 0;            
                 this.passRolls = 0;
@@ -1425,7 +1428,7 @@ class pass_dontpass extends Strategy {
 }
 
 class mike_harris extends Strategy {
-    static description() {return '$15 DontPass with 345x lay. $15 Come when point is on. Place 5/6/8/9 for $20/$24. Buy the 4/10 for $20(+1). Use place bet winnings to cover come bet odds. Press come odds by $10 with every off/on. Bet $16 point Hardway, $3 on rest. Hop the 7 once enough come bets are working.'};
+    static description() {return '$15 DontPass with 345x lay. $15 Come when point is on. Place 5/6/8/9 for $20/$24. Buy the 4/10 for $20(+1). Use place/buy bet winnings to cover come bet odds. Press come odds by $10 with every off/on. Bet $16 point Hardway, $3 on rest. Hop the 7 once enough come bets are working. Stop when new shooter comes out and bankroll is <$250 or > a degrading % of starting bankroll. Also stop if maxRolls or maxShooters is reached'};
 
     dontOddsStrategy = new dontpass_odds('345');
     update(player, table, unit=5) {
@@ -1434,11 +1437,18 @@ class mike_harris extends Strategy {
 
         let startingMultipier = 1 + 0.6 * (.95 ** table.numberOfShooters);
         
-        if (player.startingBankroll * startingMultipier < player.bankroll) {
-            log("Strategy Mike Harris 15 stopping after " + table.numberOfShooters + " shooters because it hit:" + startingMultipier + " of starting bankroll");
+        if (player.startingBankroll * startingMultipier < player.bankroll && table.shooterRolls == 0) {
+            log("Strategy Mike Harris 15 stopping after " + table.numberOfShooters + " shooters because it hit:" + (startingMultipier/100).toFixed(1) + "% of starting bankroll");
             player.strategyInfo.stopped = true;
             return;
         }
+
+        if (player.bankroll < 250 && table.shooterRolls == 0) {
+            log("Strategy Mike Harris stopping with new shooter because bankroll is too low");
+            player.strategyInfo.stopped = true;
+            return;
+        }
+
         unit = 15;
         // dont pass bet with max odds laid
         this.dontOddsStrategy.update(player, table, unit)
@@ -1552,33 +1562,3 @@ class custom extends Strategy {
     static description() {return 'Whatever customupdate you define in the text area below'};
 }
 
-
-// dice = new FakeDice([[5,5],[5,4],[5,3],[5,2]]);
-// table = new Table(new Dice());
-// table.addPlayer(new Player(500, mike_harris, 1));
-// table.run(100, 20, verbose=true)
-
-// let outputs = [];
-// [mike_harris, pass_2come, pass_dontpass_horn12, hammerlock, dontpass_odds].forEach(strategy=>{
-//     let sim = new Simulation(1000, 200, 20, 500, strategy);
-//     //sim.printout();
-//     outputs.push(sim.run());
-// })
-// console.log(outputs);
-
-        // results = pd.DataFrame(results, columns = ['sim', 'final', 'initial', 'n_rolls'])
-        // results['winnings'] = results['final'] - results['initial']
-        // p = (
-        //     ggplot(results, aes(x='winnings')) + 
-        //     geom_vline(xintercept = 0, color = 'grey') + 
-        //     geom_density() +
-        //     theme_classic() + 
-        //     labs(x = "Winnings", y = "Relative chance of outcome", title = "Bankroll:" + str(self.bankroll) + " Sims:" + str(self.num_of_runs) + " MaxShooter:" + str(self.max_shooters) + " MaxRolls:" + str(self.max_rolls))
-        // )
-        // ggsave(plot = p, filename = sim_name, path = "./output/simulations/")
-        // # print("Sum of output density",sum(output_density.values()))
-        // # print("Max of output density",max(output_density.values()))
-        // # print("Min of output density keys",min(output_density.keys()))
-        // # print("Max of output density keys",max(output_density.keys()))
-        // # print(output_density)
-        // return output_density
