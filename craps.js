@@ -1438,7 +1438,7 @@ class mike_harris extends Strategy {
         let startingMultipier = 1 + 0.6 * (0.95 ** table.numberOfShooters);
         
         if (player.startingBankroll * startingMultipier < player.bankroll && table.shooterRolls == 0) {
-            log("Strategy stopping after " + table.numberOfShooters + " shooters because it hit:" + (startingMultipier/100).toFixed(1) + "% of starting bankroll");
+            log("Strategy stopping after " + table.numberOfShooters + " shooters because it hit:" + (startingMultipier*100).toFixed(1) + "% of starting bankroll");
             player.strategyInfo.stopped = true;
             return;
         }
@@ -1598,7 +1598,7 @@ if (player.strategyInfo.stopped)
 let startingMultipier = 1 + 0.6 * (0.95 ** table.numberOfShooters);
 
 if (player.startingBankroll * startingMultipier < player.bankroll && table.shooterRolls == 0) {
-    log("Strategy stopping after " + table.numberOfShooters + " shooters because it hit:" + (startingMultipier/100).toFixed(1) + "% of starting bankroll");
+    log("Strategy stopping after " + table.numberOfShooters + " shooters because it hit:" + (startingMultipier*100).toFixed(1) + "% of starting bankroll");
     player.strategyInfo.stopped = true;
     return;
 }
