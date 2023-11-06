@@ -1,6 +1,9 @@
 <html>
     <head>
         <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.31.1/ace.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.31.1/ext-language_tools.js"></script>
+        
         <script src="craps.js"></script>
         <script>
             google.charts.load('current', {'packages':['corechart']});
@@ -20,6 +23,7 @@
                 mike_harris : mike_harris,
                 pass_dontpass : pass_dontpass,
                 frank_dontpassdontcome_odds_68: frank_dontpassdontcome_odds_68,
+                mikeharrisno59: mikeharrisno59,
                 custom: custom
             }
 
@@ -50,6 +54,23 @@
             .hidden {
                 display: none;
             }
+            div.custom {
+                width: 50%;
+                min-height: 600px;
+                height: 100%;
+                position: relative;
+            }
+            .flex {
+                display: flex;
+            }
+            .editor {
+                display: block;
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+            }
         </style>
     </head>
     <body>
@@ -59,7 +80,52 @@
             </div>
         </div>
         <button class="custom">Show/Hide Custom</button>
-       <div><textarea class="custom hidden" placeholder="Enter the contents of the update method" rows="10" cols="80"></textarea></div>
+        <div class="custom-wrapper hidden">
+            <div class="flex">
+                <div class="custom">
+                    <pre class="editor">
+                    </pre>
+                </div>
+                <pre class="instructions">
+player, table, and unit are passed to the method you are defining
+player {
+    bankroll: the current bankroll
+    startingBankroll: the amount of money the player started with
+    getBet(betName, betNumber) - betNumber is optional. betName is one of Place, Buy, Come, Odds, LayOdds, LayOdds
+    betsOnTable: an array of bets player currenty has on the table
+    bet(Bet object): place this bet
+    strategyInfo: {
+        stopped: if set to true, no more bets will be placed
+        currentShooter {
+            betsWon: a list of bets won
+        }
+    }
+}
+
+table {
+    shooterRolls: the number of rolls current shooter has made
+    numberOfShooters: the number of shooters that have gone in the current session
+    point: The current point
+    hasPoint(): Whether or not the table has a point
+}
+
+unit: current amount of table minimum
+
+new Place(20, 5)  - Place the 5 for $20
+new Buy(21, 4) - Place the 4 for $20 ($1 commission paid up front)
+new Hop(5, "16") - Hop the 7 (1,6) for $5
+new Odds(20, 4) - Place an Odds bet on 4 for $20 (assumes Pass/Come exists)
+new Come(5) - Bet $5 on Come
+new Pass(5) - Bet $5 on Pass line
+new DontPass(5) - Bet $5 on Dont Pass line
+new LayOdds(40, 4) - Lay $40 odds on 4 (assumes DontPass/DontCome exists)
+new DontCome(5) - Bet $5 on DontCome
+this.dontOddsStrategy.update(player, table, unit) - Run another strategy along with this one
+calculateOddsBet(number, unit, oddsMultiple) - Calculates max odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
+calculateLayOddsBet(number, unit, oddsMultiple) - Calculates max lay odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
+                </pre>
+            </div>
+        </div>
         <hr>
         <div><label>Number of Runs</label><input type="number" name="numberOfRuns" value="2000"></div>
         <div><label>Max Rolls</label><input type="number" name="maxRolls" value="100"></div>
@@ -73,10 +139,24 @@
         <hr>
         <p>Update the contents of the textarea and select custom strategy above to see how it performs.</p>
         <script>
+            const customEl = document.querySelector('div.custom-wrapper');
+            const editor = window.ace.edit(customEl.querySelector('.editor'));
+            editor.setTheme(`ace/theme/monokai`);
+            editor.session.setMode(`ace/mode/javascript`);
+            editor.setOptions({
+                enableBasicAutocompletion: true,
+                enableSnippets: true,
+                enableLiveAutocompletion: true,
+                wrap: true,
+                showLineNumbers: true
+            });
+            editor.on('change', data => {
+            console.log('edited result', data);
+            });
+
         let strategiesEl = document.querySelector('div.strategies');
         let logEl = document.querySelector('div.printout');
         let statusEl = document.querySelector('div.status');
-        let customEl = document.querySelector('textarea.custom');
         document.querySelector('button.doit').addEventListener('click', setItUp);
         document.querySelector('button.custom').addEventListener('click', ()=>customEl.classList.toggle('hidden'));
 
@@ -102,8 +182,7 @@
                     lines.splice(0,1);
                     // remove last line
                     lines.splice(lines.length-1,1);
-                    customEl.value = lines.join('\n');
-                    customEl.rows = lines.length;
+                    editor.setValue(lines.join('\n'));
                 })
             }
 
@@ -126,7 +205,7 @@
                 let strategy = new strategiesAvailable[el.value]();
                 strategies.push(strategy);
                 if (el.value == 'custom') {
-                    strategy.update = Function("player", "table", "unit", "strategyInfo", customEl.value);
+                    strategy.update = Function("player", "table", "unit", "strategyInfo", editor.getValue());
                 }
             });
 

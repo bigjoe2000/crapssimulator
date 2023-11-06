@@ -1435,16 +1435,16 @@ class mike_harris extends Strategy {
         if (player.strategyInfo.stopped)
             return;
 
-        let startingMultipier = 1 + 0.6 * (.95 ** table.numberOfShooters);
+        let startingMultipier = 1 + 0.6 * (0.95 ** table.numberOfShooters);
         
         if (player.startingBankroll * startingMultipier < player.bankroll && table.shooterRolls == 0) {
-            log("Strategy Mike Harris 15 stopping after " + table.numberOfShooters + " shooters because it hit:" + (startingMultipier/100).toFixed(1) + "% of starting bankroll");
+            log("Strategy stopping after " + table.numberOfShooters + " shooters because it hit:" + (startingMultipier/100).toFixed(1) + "% of starting bankroll");
             player.strategyInfo.stopped = true;
             return;
         }
 
         if (player.bankroll < 250 && table.shooterRolls == 0) {
-            log("Strategy Mike Harris stopping with new shooter because bankroll is too low");
+            log("Strategy stopping with new shooter because bankroll is too low");
             player.strategyInfo.stopped = true;
             return;
         }
@@ -1584,6 +1584,111 @@ class frank_dontpassdontcome_odds_68 extends Strategy {
                 }
             });
     
+        }
+    }
+}
+
+class mikeharrisno59 extends Strategy {
+    static description() {return '$25 DontPass with 345x lay. $15 Come when point is on. Place 6/8 for $24. Buy the 4/10 for $25(+1). Use place/buy bet winnings to cover come bet odds. Press come odds by $10 with every off/on. Bet $4 point Hardway, $2 on rest. Hop the 7 for $8, horns for $2/$4 when bases loaded. Stop when new shooter comes out and bankroll is <$250 or > a degrading % of starting bankroll. Also stop if maxRolls or maxShooters is reached.'};
+    update(player, table, unit=5) {
+
+if (player.strategyInfo.stopped)
+    return;
+
+let startingMultipier = 1 + 0.6 * (0.95 ** table.numberOfShooters);
+
+if (player.startingBankroll * startingMultipier < player.bankroll && table.shooterRolls == 0) {
+    log("Strategy stopping after " + table.numberOfShooters + " shooters because it hit:" + (startingMultipier/100).toFixed(1) + "% of starting bankroll");
+    player.strategyInfo.stopped = true;
+    return;
+}
+
+if (player.bankroll < 250 && table.shooterRolls == 0) {
+    log("Strategy stopping with new shooter because bankroll is too low");
+    player.strategyInfo.stopped = true;
+    return;
+}
+
+unit = 15;
+
+if (!table.hasPoint() && !player.getBet("DontPass")) {
+    player.bet(new DontPass(25));
+}
+
+if (table.hasPoint()) {
+    
+    player.removeBetByObject(player.getBet("LayOdds", table.point));
+    let numberOfComeBets = Math.floor(player.betsOnTable.filter(b=>b.name == 'Odds').length / 2);
+    player.bet(new LayOdds(90 + numberOfComeBets * 30, table.point));
+    
+    // Remove any place bets that are now on the point
+    let placePointBet = player.getBet("Place", table.point);
+    if (placePointBet) {
+        player.removeBetByObject(placePointBet);
+    }
+    // Remove any buy bets that are now on the point
+    let buyPointBet = player.getBet("Buy", table.point);
+    if (buyPointBet) {
+        player.removeBetByObject(buyPointBet);
+    }
+    // Odds on any come bet that has established a point
+    player.betsOnTable.filter(b=>b.name == "Come" && b.subname).forEach(b=>{
+        if (!player.getBet("Odds", b.subname)) {
+            let oddsAmount = unit;
+            if (["4", "10"].indexOf(b.subname) > -1) {
+                oddsAmount = 45;
+            } else if (["6", "8"].indexOf(b.subname) > -1) {
+
+                // Press the odds $10 for every time we've won
+                oddsAmount = Math.min(75, 35 + (player.strategyInfo.currentShooter.betsWon.filter(bw=>bw.name=='Odds' && bw.subname==b.subname).length * 10));
+            } else {
+                oddsAmount = Math.min(60, 30 + (player.strategyInfo.currentShooter.betsWon.filter(bw=>bw.name=='Odds' && bw.subname==b.subname).length * 10));
+            }
+            player.bet(new Odds(oddsAmount, b.subname));
+        }
+    });
+
+    [6, 8].forEach(n=>{
+        if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Place", n)) {
+            player.bet(new Place(24, n));
+        }
+    });
+    [4, 10].forEach(n=>{
+        if (table.point != n && !player.getBet("Odds", n) && !player.getBet("Buy", n)) {
+            player.bet(new Buy(26, n));
+        }
+    });
+    // If point is hard way, bet that hard way
+    if (table.point % 2 == 0 && !player.getBet("Hard", table.point)) {
+        player.bet(new Hard(4, table.point));
+    }
+    
+    // bet 3 on rest (or all) of the hardways
+    [4,6,8,10].forEach(n=>{
+        if (!player.getBet("Hard", n)) {
+            player.bet(new Hard(2, n));
+        }
+    })
+
+    let oddsAtRisk = 0;
+    player.betsOnTable.filter(b=>b.name == 'Odds' || b.name == 'Buy').forEach(b=>{
+        if (b.name == 'Buy') oddsAtRisk += b.betAmount;
+        b.offOnComeOut = true;
+    });
+
+    if (player.betsOnTable.filter(b=>b.name == 'Odds').length > 4) {
+        player.bet(new Hop(8, "16"));
+        player.bet(new Hop(8, "25"));
+        player.bet(new Hop(8, "34"));
+        player.bet(new Hop(2, "56"));
+        player.bet(new Hop(2, "12"));
+        player.bet(new Hop(1, "66"));
+        player.bet(new Hop(1, "11"));
+    }
+
+    // Add a come bet every roll
+    player.bet(new Come(unit));
+
         }
     }
 }
