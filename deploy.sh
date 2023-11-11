@@ -1,1 +1,1 @@
-scp -P 5922 craps.js index.html chips.html conditions.js crapslayout.png test.html crunch@www.bigjoe.org:/garage/www-ssl/craps/
+scp -P 5922 *.js *.html *.png crunch@www.bigjoe.org:/garage/www-ssl/craps/
