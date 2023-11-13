@@ -61,6 +61,10 @@
                 white-space: -o-pre-wrap;    /* Opera 7 */
                 word-wrap: break-word;       /* Internet Explorer 5.5+ */
             }
+            div.debug-output {
+                height: 300px;
+                overflow-y: scroll;
+            }
         </style>
     </head>
     <body>
@@ -68,76 +72,46 @@
 
 
         <div>
-            <label>Strategies to test</label>
+            <p class="lead text-muted text-center">Select strategies to compare by clicking on them</p>
             <div class="strategies row row-cols-1 row-cols-md-2 align-items-center justify-content-center gap-2 border-0">
 
             </div>
         </div>
 
-        <div class="modal fade" id="tutorialModal" tabindex="-1" aria-labelledby="tutorialModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h1 class="modal-title fs-5" id="tutorialModalLabel">Javascript Help</h1>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <pre>
-                    player, table, and unit are passed to the method you are defining
-                    player {
-                        bankroll: the current bankroll
-                        startingBankroll: the amount of money the player started with
-                        getBet(betName, betNumber) - betNumber is optional. betName is one of Place, Buy, Come, Odds, LayOdds, LayOdds
-                        betsOnTable: an array of bets player currenty has on the table
-                        bet(Bet object): place this bet
-                        strategyInfo: {
-                            stopped: if set to true, no more bets will be placed
-                            currentShooter {
-                                betsWon: a list of bets won
-                                betsLost: a list of bets lossm
-                                betsPush: a list of bets pushed
-                            }
-                        }
-                    }
-                    
-                    table {
-                        shooterRolls: the number of rolls current shooter has made
-                        numberOfShooters: the number of shooters that have gone in the current session
-                        point: The current point
-                        hasPoint(): Whether or not the table has a point
-                    }
-                    
-                    unit: current amount of table minimum
-                    
-                    new Place(20, 5)  - Place the 5 for $20
-                    new Buy(21, 4) - Place the 4 for $20 ($1 commission paid up front)
-                    new Hop(5, "16") - Hop the 7 (1,6) for $5
-                    new Odds(20, 4) - Place an Odds bet on 4 for $20 (assumes Pass/Come exists)
-                    new Come(5) - Bet $5 on Come
-                    new Pass(5) - Bet $5 on Pass line
-                    new DontPass(5) - Bet $5 on Dont Pass line
-                    new LayOdds(40, 4) - Lay $40 odds on 4 (assumes DontPass/DontCome exists)
-                    new DontCome(5) - Bet $5 on DontCome
-                    this.dontOddsStrategy.update(player, table, unit) - Run another strategy along with this one
-                    calculateOddsBet(number, unit, oddsMultiple) - Calculates max odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
-                    calculateLayOddsBet(number, unit, oddsMultiple) - Calculates max lay odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
-                </pre></div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tutorialModal">Javascript Help</button>
         <hr>
-        <div><label>Number of Runs</label><input type="number" name="numberOfRuns" value="2000"></div>
-        <div><label>Max Rolls</label><input type="number" name="maxRolls" value="100"></div>
-        <div><label>Max Shooters</label><input type="number" name="maxShooters" value="15"></div>
-        <div><label>Bankroll</label><input type="number" name="bankroll" value="1000"></div>
-        <div><label>Debug one run only</label><input type="checkbox" name="once"></div>
-        <button class="doit">Do It</button>
+
+        <div class="container-md">
+            <div class="row">
+                <div class="col">
+                <label class="form-label">Max Rolls</label>
+                <input type="number" name="maxRolls" value="100" class="form-control">
+                </div>
+                <div class="col">
+                    <label class="form-label">Max Shooters</label>
+                    <input type="number" name="maxShooters" value="15" class="form-control">
+                </div>
+                <div class="col">
+                    <label class="form-label">Starting Bankroll</label>
+                    <input type="number" name="bankroll" value="1000" class="form-control">
+                </div>
+                <div class="col">
+                    <label class="form-label">Number of Runs</label>
+                    <input type="number" name="numberOfRuns" value="2000" class="form-control">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <button type="button" class="btn btn-info debug-button disabled">Debug</button>
+                    <button type="button" class="btn btn-primary simulate-button disabled">Simulate</button>
+                    <small class="opacity-50 text-nowrap">Select strategies to enable these buttons</small>
+                </div>
+            </div>
+        </div>
+
+
+
         <div class="status"></div>
-        <div class="printout"></div>
+        <div class="printout debug-output border border-info border-opacity-50 m-3 p-3 hidden"></div>
         <div class="chart"></div>
         <div class="templates hidden">
             <div class="card strategy-item" style="width: 18rem;">
@@ -189,12 +163,81 @@
                             </div>
                             <div class="py-0 px-3 my-0 opacity-50"><label>}</label></div>
                         </div>
+                        <div class="container-fluid text-end p-3 m-3">
+                            <small class="opacity-50 text-nowrap">Debug script to enable Save buttons</small>
+                            <button type="button" class="btn btn-danger delete-button" data-bs-dismiss="modal">Delete</button>
+                            <button type="button" class="btn btn-info debug-button">Debug</button>
+                            <button type="button" class="btn btn-warning save-button disabled">Save</button>
+                            <button type="button" class="btn btn-primary save-as-new-button disabled">Save As New</button>    
+                        </div>
+                        <div class="accordion">
+                            <div class="accordion-item">
+                              <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">Debug</button>
+                              </h2>
+                              <div id="collapseOne" class="accordion-collapse open" data-bs-parent="#accordionExample">
+                                <div class="accordion-body">
+                                    <div class="p-3"><label class="form-label">Debug Rolls <small class="opacity-50">Optionally enter two digit rolls separated by spaces</small></label><input name="fake-rolls" type="text" class="form-control" placeholder="11 56 52 63"></div>
+                                    <div class="p-3">
+                                        <label class="form-label">Debug Output</label>
+                                        <div class="debug-output border border-info-subtle"></div>
+                                    </div>
+                                    </div>
+                              </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                    Javascript Help
+                                  </button>
+                                </h2>
+                                <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                                  <div class="accordion-body">
+                                    <pre>
+                                        player, table, and unit are passed to the method you are defining
+                                        player {
+                                            bankroll: the current bankroll
+                                            startingBankroll: the amount of money the player started with
+                                            getBet(betName, betNumber) - betNumber is optional. betName is one of Place, Buy, Come, Odds, LayOdds, LayOdds
+                                            betsOnTable: an array of bets player currenty has on the table
+                                            bet(Bet object): place this bet
+                                            strategyInfo: {
+                                                stopped: if set to true, no more bets will be placed
+                                                currentShooter {
+                                                    betsWon: a list of bets won
+                                                    betsLost: a list of bets lossm
+                                                    betsPush: a list of bets pushed
+                                                }
+                                            }
+                                        }
+                                        
+                                        table {
+                                            shooterRolls: the number of rolls current shooter has made
+                                            numberOfShooters: the number of shooters that have gone in the current session
+                                            point: The current point
+                                            hasPoint(): Whether or not the table has a point
+                                        }
+                                        
+                                        unit: current amount of table minimum
+                                        
+                                        new Place(20, 5)  - Place the 5 for $20
+                                        new Buy(21, 4) - Place the 4 for $20 ($1 commission paid up front)
+                                        new Hop(5, "16") - Hop the 7 (1,6) for $5
+                                        new Odds(20, 4) - Place an Odds bet on 4 for $20 (assumes Pass/Come exists)
+                                        new Come(5) - Bet $5 on Come
+                                        new Pass(5) - Bet $5 on Pass line
+                                        new DontPass(5) - Bet $5 on Dont Pass line
+                                        new LayOdds(40, 4) - Lay $40 odds on 4 (assumes DontPass/DontCome exists)
+                                        new DontCome(5) - Bet $5 on DontCome
+                                        this.dontOddsStrategy.update(player, table, unit) - Run another strategy along with this one
+                                        calculateOddsBet(number, unit, oddsMultiple) - Calculates max odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
+                                        calculateLayOddsBet(number, unit, oddsMultiple) - Calculates max lay odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
+                                    </pre>
+                                    </div>
+                                </div>
+                              </div>
                       </div>
                       <div class="modal-footer">
-                        <button type="button" class="btn btn-danger delete-button" data-bs-dismiss="modal">Delete</button>
-                        <button type="button" class="btn btn-info debug-button">Debug</button>
-                        <button type="button" class="btn btn-warning save-button disabled">Save</button>
-                        <button type="button" class="btn btn-primary save-as-new-button disabled">Save As New</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                       </div>
                     </div>
@@ -202,7 +245,6 @@
             </div>
         </div>
         <hr>
-        <p>Update the contents of the textarea and select custom strategy above to see how it performs.</p>
         <script>
 
         const API = "https://www.bigjoe.org/chouette/api/strategy";
@@ -215,7 +257,17 @@
         let strategiesEl = document.querySelector('div.strategies');
         let logEl = document.querySelector('div.printout');
         let statusEl = document.querySelector('div.status');
-        document.querySelector('button.doit').addEventListener('click', setItUp);
+
+        let simulateButton = document.querySelector('button.simulate-button');
+        let debugButton = document.querySelector('button.debug-button');
+        debugButton.addEventListener('click', setItUp.bind(null, true));
+        simulateButton.addEventListener('click', setItUp.bind(null, false));
+
+        function enableDebugSimulate() {
+            let atLeastOne = strategiesEl.querySelector('div.card.strategy-item input.hidden:checked');
+            debugButton.classList.toggle('disabled', !atLeastOne);
+            simulateButton.classList.toggle('disabled', !atLeastOne);
+        }
 
         let uid;
         addLoadedCallback(user=>{
@@ -234,138 +286,202 @@
 
         function addStrategy(strategy) {
             let el = strategyItemEl.cloneNode(true);
-                    strategiesEl.appendChild(el);
-                    el.querySelector('.strategy-name').innerText = strategy.name;
-                    el.querySelector('.is-system').innerText = strategy.uid ? '' : 'system';
+            let isAdmin = uid == 'prEJbkKQxxRY50xoKXDQ8aV80mu1';
+            strategiesEl.appendChild(el);
+            el.querySelector('.strategy-name').innerText = strategy.name;
+            el.querySelector('.is-system').innerText = strategy.uid ? '' : 'system';
 
-                    let inputEl = el.querySelector('input.hidden');
-                    inputEl.value = strategy.id;
-                    inputEl.dataset.content = strategy.content;
-                    inputEl.dataset.name = strategy.name;
+            let inputEl = el.querySelector('input.hidden');
+            inputEl.value = strategy.id;
+            inputEl.dataset.id = strategy.id;
+            inputEl.dataset.content = strategy.content;
+            inputEl.dataset.name = strategy.name;
 
-                    el.querySelector('.info-button').addEventListener('click', e=>{
-                        console.log('clicked');
-                        e.stopPropagation();
-                        let infoEl = infoModalEl.cloneNode(true);
-                        infoEl.querySelector('.strategy-name').innerText = strategy.name;
-                        infoEl.querySelector('.strategy-description').innerText = strategy.description;
-                        infoEl.querySelector('.strategy-content').innerText = strategy.content;
-                        bootstrap.Modal.getOrCreateInstance(infoEl).show();
+            el.querySelector('.info-button').addEventListener('click', e=>{
+                console.log('clicked');
+                e.stopPropagation();
+                let infoEl = infoModalEl.cloneNode(true);
+                infoEl.querySelector('.strategy-name').innerText = strategy.name;
+                infoEl.querySelector('.strategy-description').innerText = strategy.description;
+                infoEl.querySelector('.strategy-content').innerText = strategy.content;
+                bootstrap.Modal.getOrCreateInstance(infoEl).show();
 
-                        infoEl.querySelector('.edit-button').addEventListener('click', ()=>{
-                            console.log('clicked edit button');
-                            let editEl = editorModalEl.cloneNode(true);
-                            let editor = window.ace.edit(editEl.querySelector('.editor'));
-                            let saveButton = editEl.querySelector("button.save-button");
-                            let saveAsNewButton = editEl.querySelector("button.save-as-new-button");
-                            let debugButton = editEl.querySelector("button.debug-button");
+                infoEl.querySelector('.edit-button').addEventListener('click', ()=>{
+                    console.log('clicked edit button');
+                    let editEl = editorModalEl.cloneNode(true);
+                    let debugEl = editEl.querySelector('div.debug-output');
+                    let editor = window.ace.edit(editEl.querySelector('.editor'));
+                    let saveButton = editEl.querySelector("button.save-button");
+                    let saveAsNewButton = editEl.querySelector("button.save-as-new-button");
+                    let debugButton = editEl.querySelector("button.debug-button");
+                    setTimeout(()=>{
+                        var popover = bootstrap.Popover.getOrCreateInstance(saveButton)
+                        popover.enable();
+                    }, 1000);
 
-                            editor.setTheme(`ace/theme/monokai`);
-                            editor.session.setMode(`ace/mode/javascript`);
-                            editor.setOptions({
-                                enableBasicAutocompletion: true,
-                                enableSnippets: true,
-                                enableLiveAutocompletion: true,
-                                wrap: true,
-                                showLineNumbers: true
-                            });
-
-                            editor.setValue(js_beautify(strategy.content));
-                            editor.on('change', data => {
-                                saveButton.classList.add('disabled');
-                                saveAsNewButton.classList.add('disabled');
-                            });
-
-                            debugButton.addEventListener('click', ()=>{
-                                alert('not yet implemented');
-                                saveButton.classList.remove('disabled');
-                                saveAsNewButton.classList.remove('disabled');
-                            })
-
-                            editEl.querySelector('input[name=strategy-id]').value = strategy.id;
-                            editEl.querySelector('input[name=strategy-uid]').value = strategy.uid;
-                            editEl.querySelector('input[name=strategy-name]').value = strategy.name;
-                            editEl.querySelector('textarea[name=strategy-description]').innerText = strategy.description;
-                            editEl.querySelector('button.save-button').classList.toggle('hidden', !strategy.uid);
-                            // modal.hide();
-                            bootstrap.Modal.getOrCreateInstance(editEl).show();
-
-                            editEl.querySelector('.delete-button').classList.toggle('hidden', !strategy.uid);
-                            editEl.querySelector('.delete-button').addEventListener('click', ()=>{
-                                makeApiCall(API + '/delete?id=' + strategy.id, 'POST');
-                                loadStrategies();
-                            })
-
-
-                            editEl.querySelector("button.save-button").addEventListener('click', ()=>{
-                                makeApiCall(API + '/save', 'POST', {
-                                    id: editEl.querySelector('input[name=strategy-id]').value,
-                                    uid: uid,
-                                    name: editEl.querySelector('input[name=strategy-name]').value,
-                                    description: editEl.querySelector('textarea[name=strategy-description]').value,
-                                    content: js_beautify(editor.getValue())
-                                    }, ()=>{
-                                        bootstrap.Modal.getOrCreateInstance(editEl).hide();
-                                        loadStrategies();
-                                    }
-                                )
-                            });
-
-                            editEl.querySelector("button.save-as-new-button").addEventListener('click', ()=>{
-                                makeApiCall(API + '/save', 'POST', {
-                                    uid: uid,
-                                    name: editEl.querySelector('input[name=strategy-name]').value,
-                                    description: editEl.querySelector('textarea[name=strategy-description]').value,
-                                    content: js_beautify(editor.getValue())
-                                    }, ()=>{
-                                        bootstrap.Modal.getOrCreateInstance(editEl).hide();
-                                        loadStrategies();
-                                    }
-                                )
-                            });
-                        })
-
+                    editor.setTheme(`ace/theme/monokai`);
+                    editor.session.setMode(`ace/mode/javascript`);
+                    editor.setOptions({
+                        enableBasicAutocompletion: true,
+                        enableSnippets: true,
+                        enableLiveAutocompletion: true,
+                        wrap: true,
+                        showLineNumbers: true
                     });
-                    el.addEventListener('click', ()=>{
-                        inputEl.checked = !inputEl.checked;
-                        el.classList.toggle('bg-primary');
-                        el.classList.toggle('text-light');
+
+                    editor.setValue(js_beautify(strategy.content), -1);
+                    setTimeout(()=>editor.focus(), 500);
+                    editor.on('change', data => {
+                        saveButton.classList.add('disabled');
+                        saveAsNewButton.classList.add('disabled');
+                    });
+
+                    debugButton.addEventListener('click', ()=>{
+                        removeChildren(debugEl);
+                        let s = new custom();
+                        let sim;
+                        s.name = strategy.name;
+                        s.id = strategy.id;
+                        try {
+                            s.update = Function("player", "table", "unit", "strategyInfo", editor.getValue());
+
+                            let dice = new FakeDice();
+                            let rollsEl = editEl.querySelector('input[name=fake-rolls]');
+                            if (rollsEl.value) {
+                                dice.rolls = [];
+                                rollsEl.value.split(' ').forEach(twodice=>{
+                                    let chars = twodice.split('');
+                                    let roll = [parseInt(chars[0]), parseInt(chars[1])];
+                                    if (roll[0] > 0 && roll[0] < 7
+                                        && roll[1] > 0 && roll[1] < 7)
+                                    dice.rolls.push(roll);
+                                })
+                            }
+                            let config = getSimConfig();
+                            sim = new Simulation(config.numberOfRuns, config.maxRolls, config.maxShooters, config.bankroll, [s]);
+                            sim.printout(dice);
+                            sim.logs.forEach(l=>{
+                                let line = document.createElement('div');
+                                line.innerText = l;
+                                debugEl.appendChild(line);
+                            });
+                            saveButton.classList.remove('disabled');
+                            saveAsNewButton.classList.remove('disabled');
+                        } catch (error) {
+                            if (sim && sim.logs)
+                                sim.logs.forEach(l=>{
+                                    let line = document.createElement('div');
+                                    line.innerText = l;
+                                    debugEl.appendChild(line);
+                                });
+                            let pre = document.createElement('pre');
+                            pre.innerText = error.stack;
+                            debugEl.appendChild(pre);
+                            debugEl.scrollTop = debugEl.scrollHeight;
+                            debugEl.scrollIntoView();
+                        }
+
                     })
+
+                    editEl.querySelector('input[name=strategy-id]').value = strategy.id;
+                    editEl.querySelector('input[name=strategy-uid]').value = strategy.uid;
+                    editEl.querySelector('input[name=strategy-name]').value = strategy.name;
+                    editEl.querySelector('textarea[name=strategy-description]').innerText = strategy.description;
+                    editEl.querySelector('button.save-button').classList.toggle('hidden', !strategy.uid && !isAdmin);
+                    // modal.hide();
+                    bootstrap.Modal.getOrCreateInstance(editEl).show();
+
+                    editEl.querySelector('.delete-button').classList.toggle('hidden', !strategy.uid);
+                    editEl.querySelector('.delete-button').addEventListener('click', ()=>{
+                        makeApiCall(API + '/delete?id=' + strategy.id, 'POST');
+                        loadStrategies();
+                    })
+
+
+                    editEl.querySelector("button.save-button").addEventListener('click', ()=>{
+                        let obj = {
+                            id: editEl.querySelector('input[name=strategy-id]').value,
+                            uid: uid,
+                            name: editEl.querySelector('input[name=strategy-name]').value,
+                            description: editEl.querySelector('textarea[name=strategy-description]').value,
+                            content: js_beautify(editor.getValue())
+                        };
+                        let url = API + '/save';
+                        if (uid == 'prEJbkKQxxRY50xoKXDQ8aV80mu1' && !strategy.uid) {
+                            url = API + '/saveSystem';
+                            obj.uid = null;
+                        }
+                        makeApiCall(url, 'POST', obj, ()=>{
+                                bootstrap.Modal.getOrCreateInstance(editEl).hide();
+                                loadStrategies();
+                            }
+                        )
+                    });
+
+                    editEl.querySelector("button.save-as-new-button").addEventListener('click', ()=>{
+                        let url = API + '/save';
+                        makeApiCall(url, 'POST', {
+                            uid: uid,
+                            name: editEl.querySelector('input[name=strategy-name]').value,
+                            description: editEl.querySelector('textarea[name=strategy-description]').value,
+                            content: js_beautify(editor.getValue())
+                            }, ()=>{
+                                bootstrap.Modal.getOrCreateInstance(editEl).hide();
+                                loadStrategies();
+                            }
+                        )
+                    });
+                })
+
+            });
+            el.addEventListener('click', ()=>{
+                inputEl.checked = !inputEl.checked;
+                el.classList.toggle('bg-primary');
+                el.classList.toggle('text-light');
+                enableDebugSimulate();
+            })
         }
 
-        function setItUp() {
+        function setItUp(isDebug) {
             removeChildren(logEl);
+            logEl.classList.toggle('hidden', !isDebug);
             logs = [];
 
-            if (!document.querySelector('input[name=once]').checked) {
+            if (isDebug) {
                 statusEl.innerText = 'Running Simulation';
             }
-            setTimeout(doIt, 0);
+            setTimeout(doIt.bind(null, isDebug), 0);
         }
 
-        function doIt() {
-            let title = 'Strategy Comparison ' + new Date().toString() + ' ';
-            let strategies = [];
-            strategiesEl.querySelectorAll('input[type=checkbox]:checked').forEach(el=>{
-                let strategy = new custom();
-                strategy.name = el.dataset.name;
-                strategies.push(strategy);
-                strategy.update = Function("player", "table", "unit", "strategyInfo", el.dataset.content);
-            });
-
-            if (strategies.length == 0) {
-                strategies = [new passline()];
-            }
-            let config = {
+        function getSimConfig() {
+            return {
                 numberOfRuns : document.querySelector('input[name=numberOfRuns]').value,
                 maxRolls : document.querySelector('input[name=maxRolls]').value,
                 maxShooters : document.querySelector('input[name=maxShooters]').value,
                 bankroll : document.querySelector('input[name=bankroll]').value,
-                'strategies' : strategies
             }
+        }
+
+        function getSelectedStrategies() {
+            let strategies = [];
+            strategiesEl.querySelectorAll('input[type=checkbox]:checked').forEach(el=>{
+                let strategy = new custom();
+                strategy.id = el.dataset.id;
+                strategy.name = el.dataset.name;
+                strategies.push(strategy);
+                strategy.update = Function("player", "table", "unit", "strategyInfo", el.dataset.content);
+            });
+            return strategies;
+        }
+
+        function doIt(isDebug) {
+            let title = 'Strategy Comparison ' + new Date().toString() + ' ';
+            let strategies = getSelectedStrategies();
+            let config = getSimConfig();
+            config.strategies = strategies;
             let sim = new Simulation(config.numberOfRuns, config.maxRolls, config.maxShooters, config.bankroll, strategies);
 
-            if (document.querySelector('input[name=once]').checked) {
+            if (isDebug) {
                 sim.printout();
                 let line;
                 while (logs.length) {

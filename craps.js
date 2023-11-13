@@ -165,7 +165,7 @@ class FakeDice extends Dice {
      */
     constructor(rolls) {
         super();
-        this.rolls = rolls;
+        this.rolls = rolls || [];
     }
     
     roll() {
@@ -260,9 +260,9 @@ class Table {
 
         // make sure at least one player is at table
         if (this.players.length == 0)
-            this.addPlayer(Player(500, "Player1"));
+            this.addPlayer(new Player(500, "Player1"));
         if (verbose) {
-            log("Initial players:");
+            log("Initial strategies:");
             this.players.forEach(p=>log(p.name));
         }
             
@@ -280,11 +280,11 @@ class Table {
             // players make their bets
             this.addPlayerBets();
             if (verbose) {
-                log("*** Preparing for next roll.. adding player bets");
+                log(`*** Preparing for next roll.. adding strategy bets -- point is ${this.point ? "(" + this.point + ")" : "Off"}`);
                 this.players.forEach(p=>{
                     let totalBetsOnTable = 0;
                     p.betsOnTable.forEach(b=>totalBetsOnTable += b.betAmount);
-                    log("Player:" + p.name + ' Bankroll:' + p.bankroll 
+                    log("Strategy:" + p.name + ' Bankroll:' + p.bankroll 
                     + ' Bets:' + p.betsOnTable.sort((a,b)=>(a.subname + a.name).localeCompare(b.subname + b.name)).map(b=>`${b.name}${b.subname}:${b.betAmount}`).join(' ')
                     + ' Total Bets:' + totalBetsOnTable);
                 });
@@ -293,15 +293,10 @@ class Table {
             this.dice.roll();
             this.rollDistribution[this.dice.total] += 1;
             if (verbose) {
-                log("Dice out!" + (!this.hasPoint() ? " -- Come out roll" : ""));
-                log(`Shooter rolled ${this.dice.total} ${this.dice.result}`);
+                log("Dice out! -- " + (!this.hasPoint() ? "Come out roll" : `Point is ${this.point}`) + ` -- Shooter rolled ${this.dice.total} ${this.dice.result}`);
             }
             this.updatePlayerBets(this.dice, verbose);
             this.updateTable(this.dice);
-            if (verbose) {
-                log(`Point is ${this.point ? "On" : "Off"} (${this.point})`);
-                log(`Total Cash On Table (bets plus bankroll) is ${this.totalPlayerCash}`);
-            }
 
             // evaluate the stopping condition
             continueRolling =
@@ -898,10 +893,12 @@ class Simulation {
         this.maxShooters = maxShooters;
         this.bankroll = bankroll;
         this.strategies = strategies;
+        this.logs = [];
+        logs = this.logs;
     }
 
-    printout() {
-        let table = new Table();
+    printout(dice) {
+        let table = new Table(dice);
         this.strategies.forEach(s=>{
             table.addPlayer(new Player(this.bankroll, s, s.name || s.constructor.name));
         })
