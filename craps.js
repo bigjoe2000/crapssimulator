@@ -663,7 +663,7 @@ class Buy extends Bet {
 class Lay extends Bet {
     constructor(betAmount, number) {
         super(betAmount);
-        this.name = 'Buy';
+        this.name = 'Lay';
         this.subname = number;
         this.winning_numbers = [7];
         this.losing_numbers = [number];
