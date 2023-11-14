@@ -194,44 +194,52 @@
                                 <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
                                   <div class="accordion-body">
                                     <pre>
-                                        player, table, and unit are passed to the method you are defining
-                                        player {
-                                            bankroll: the current bankroll
-                                            startingBankroll: the amount of money the player started with
-                                            getBet(betName, betNumber) - betNumber is optional. betName is one of Place, Buy, Come, Odds, LayOdds, LayOdds
-                                            betsOnTable: an array of bets player currenty has on the table
-                                            bet(Bet object): place this bet
-                                            strategyInfo: {
-                                                stopped: if set to true, no more bets will be placed
-                                                currentShooter {
-                                                    betsWon: a list of bets won
-                                                    betsLost: a list of bets lossm
-                                                    betsPush: a list of bets pushed
-                                                }
-                                            }
-                                        }
-                                        
-                                        table {
-                                            shooterRolls: the number of rolls current shooter has made
-                                            numberOfShooters: the number of shooters that have gone in the current session
-                                            point: The current point
-                                            hasPoint(): Whether or not the table has a point
-                                        }
-                                        
-                                        unit: current amount of table minimum
-                                        
-                                        new Place(20, 5)  - Place the 5 for $20
-                                        new Buy(21, 4) - Place the 4 for $20 ($1 commission paid up front)
-                                        new Hop(5, "16") - Hop the 7 (1,6) for $5
-                                        new Odds(20, 4) - Place an Odds bet on 4 for $20 (assumes Pass/Come exists)
-                                        new Come(5) - Bet $5 on Come
-                                        new Pass(5) - Bet $5 on Pass line
-                                        new DontPass(5) - Bet $5 on Dont Pass line
-                                        new LayOdds(40, 4) - Lay $40 odds on 4 (assumes DontPass/DontCome exists)
-                                        new DontCome(5) - Bet $5 on DontCome
-                                        this.dontOddsStrategy.update(player, table, unit) - Run another strategy along with this one
-                                        calculateOddsBet(number, unit, oddsMultiple) - Calculates max odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
-                                        calculateLayOddsBet(number, unit, oddsMultiple) - Calculates max lay odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
+    <span class="text-primary">player</span> {
+        <span class="text-primary">bankroll</span>: the current bankroll
+        <span class="text-primary">startingBankroll</span>: the amount of money the player started with
+        <span class="text-primary">strategyInfo</span>: {
+            <span class="text-primary">stopped</span>: if set to true, no more bets will be placed
+            <span class="text-primary">currentShooter</span> {
+                <span class="text-primary">betsWon</span>: a list of bets won
+                <span class="text-primary">betsLost</span>: a list of bets lost
+                <span class="text-primary">betsPush</span>: a list of bets pushed
+            }
+        }
+        <span class="text-primary">betsOnTable</span>: an array of bets player currenty has on the table
+        <span class="text-primary">getBet(name, number)</span>: Get the bet with the given name and optional number. Returns null if not found.
+        <span class="text-primary">bet(Bet object)</span>: place this bet
+        <span class="text-primary">createBet(name, amount, number)</span>: Create a bet with the given name and amount. number is optional depending on the type of bet (e.g. Field and Pass do not need a number)
+        <span class="text-primary">remove(name, number)</span>: Remove all bets with the given name and optional number.
+    }
+    
+    <span class="text-primary">table</span> {
+        <span class="text-primary">shooterRolls</span>: the number of rolls current shooter has made
+        <span class="text-primary">numberOfShooters</span>: the number of shooters that have gone in the current session
+        <span class="text-primary">point</span>: The current point
+        <span class="text-primary">hasPoint()</span>: Whether or not the table has a point
+        <span class="text-primary">dice</span>: {
+            <span class="text-primary">total</span>: the amount shown on the dice (ex. 7)
+            <span class="text-primary">result</span>: an array of two numbers indicating each number rolled (ex. [3,4])
+        }
+    }
+    
+    <span class="text-primary">unit</span>: the suggested minimum bet (you can place bets of any value)
+    
+    player.bet(new Place(20, 5))  - Place the 5 for $20
+    new Buy(21, 4) - Place the 4 for $20 ($1 commission paid up front)
+    new Hop(5, "16") - Hop the 7 (1,6) for $5
+    new Odds(20, 4) - Place an Odds bet on 4 for $20 (assumes Pass/Come exists)
+    new Come(5) - Bet $5 on Come
+    new Pass(5) - Bet $5 on Pass line
+    new DontPass(5) - Bet $5 on Dont Pass line
+    new LayOdds(40, 4) - Lay $40 odds on 4 (assumes DontPass/DontCome exists)
+    new DontCome(5) - Bet $5 on DontCome
+    new Field(20) - Bet the field for $20
+    new AnyCraps(20) - Bet the Any Craps for $20
+    new AnySeven(20) - Bet the Any Seven for $20
+    new Hard(5, 4) - Bet $5 on the Hard 4
+    calculateOddsBet(number, unit, oddsMultiple) - Calculates max odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
+    calculateLayOddsBet(number, unit, oddsMultiple) - Calculates max lay odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
                                     </pre>
                                     </div>
                                 </div>
@@ -338,7 +346,7 @@
 
                     debugButton.addEventListener('click', ()=>{
                         removeChildren(debugEl);
-                        let s = new custom();
+                        let s = new Strategy();
                         let sim;
                         s.name = strategy.name;
                         s.id = strategy.id;
@@ -465,7 +473,7 @@
         function getSelectedStrategies() {
             let strategies = [];
             strategiesEl.querySelectorAll('input[type=checkbox]:checked').forEach(el=>{
-                let strategy = new custom();
+                let strategy = new Strategy();
                 strategy.id = el.dataset.id;
                 strategy.name = el.dataset.name;
                 strategies.push(strategy);
