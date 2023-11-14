@@ -84,6 +84,11 @@ class Player {
         betsToRemove.forEach(b=>this.removeBetByObject(b));
     }
 
+    removeBet(name, subname='') {
+        let betsToRemove = this.betsOnTable.filter(b=>{b.name == name && (!subname || subname == b.subname)});
+        betsToRemove.forEach(b=>this.removeBetByObject(b));
+    }
+
     addStrategyBets(table, unit) {
         /*  Implement the given betting strategy  */
         return this.bettingStrategy.update(this, table, unit);
@@ -655,6 +660,34 @@ class Buy extends Bet {
     }
 }
 
+class Lay extends Bet {
+    constructor(betAmount, number) {
+        super(betAmount);
+        this.name = 'Buy';
+        this.subname = number;
+        this.winning_numbers = [7];
+        this.losing_numbers = [number];
+        this.offOnComeOut = true;
+    
+        if (number == 4 || number == 10) {
+            this.payoutratio = 1 / 2;
+        } else if (number == 5 || number == 9) {
+            this.payoutratio = 2 / 3;
+        } else if (number == 6 || number == 8) {
+            this.payoutratio = 5 / 6;
+        }
+        this.setCommission(0.05);
+    }
+    updateBet(table, dice_object) {
+        // buy bets are inactive when point is "Off"
+        if (table.hasPoint()) {
+            return super.updateBet(table, dice_object);
+        } else {
+            return [null, 0];
+        }
+    }
+}
+
 class Place extends Bet {
     constructor(betAmount, number) {
         super(betAmount);
@@ -1209,6 +1242,7 @@ const bets = {
     Pass : Pass,
     DontPass : DontPass,
     Buy : Buy,
+    Lay: Lay,
     Hop : Hop,
     Come : Come,
     DontCome : DontCome,
@@ -1218,6 +1252,10 @@ const bets = {
     Odds : Odds,
     LayOdds : LayOdds,
     AnyCraps : AnyCraps,
-    AnySeven : AnySeven
+    AnySeven : AnySeven,
+    Horn12: Horn12,
+    Horn2: Horn2,
+    Horn3: Horn3,
+    Horn11: Horn11
 }
 

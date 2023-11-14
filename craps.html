@@ -207,9 +207,8 @@
         }
         <span class="text-primary">betsOnTable</span>: an array of bets player currenty has on the table
         <span class="text-primary">getBet(name, number)</span>: Get the bet with the given name and optional number. Returns null if not found.
-        <span class="text-primary">bet(Bet object)</span>: place this bet
         <span class="text-primary">createBet(name, amount, number)</span>: Create a bet with the given name and amount. number is optional depending on the type of bet (e.g. Field and Pass do not need a number)
-        <span class="text-primary">remove(name, number)</span>: Remove all bets with the given name and optional number.
+        <span class="text-primary">removeBet(name, number)</span>: Remove all bets with the given name and optional number.
     }
     
     <span class="text-primary">table</span> {
@@ -225,21 +224,30 @@
     
     <span class="text-primary">unit</span>: the suggested minimum bet (you can place bets of any value)
     
-    player.bet(new Place(20, 5))  - Place the 5 for $20
-    new Buy(21, 4) - Place the 4 for $20 ($1 commission paid up front)
-    new Hop(5, "16") - Hop the 7 (1,6) for $5
-    new Odds(20, 4) - Place an Odds bet on 4 for $20 (assumes Pass/Come exists)
-    new Come(5) - Bet $5 on Come
-    new Pass(5) - Bet $5 on Pass line
-    new DontPass(5) - Bet $5 on Dont Pass line
-    new LayOdds(40, 4) - Lay $40 odds on 4 (assumes DontPass/DontCome exists)
-    new DontCome(5) - Bet $5 on DontCome
-    new Field(20) - Bet the field for $20
-    new AnyCraps(20) - Bet the Any Craps for $20
-    new AnySeven(20) - Bet the Any Seven for $20
-    new Hard(5, 4) - Bet $5 on the Hard 4
-    calculateOddsBet(number, unit, oddsMultiple) - Calculates max odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
-    calculateLayOddsBet(number, unit, oddsMultiple) - Calculates max lay odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
+    <span class="text-primary">player.createBet('Place', 20, 5)</span>  - Place the 5 for $20
+
+    <ul>Available bets
+        <li>Pass</li>
+        <li>DontPass</li>
+        <li>Come</li>
+        <li>DontCome</li>
+        <li>Odds</li>
+        <li>LayOdds</li>
+        <li>Place</li>
+        <li>Buy</li>
+        <li>Lay</li>
+        <li>Field</li>
+        <li>AnyCraps</li>
+        <li>AnySeven</li>
+        <li>Hard</li>
+        <li>Horn2</li>
+        <li>Horn3</li>
+        <li>Horn11</li>
+        <li>Horn12</li>
+        <li>Hop</li>
+    </ul>
+    <span class="text-primary">calculateOddsBet(number, unit, oddsMultiple)</span> - Calculates odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
+    <span class="text-primary">calculateLayOddsBet(number, unit, oddsMultiple)</span> - Calculates lay odds where oddsMultiple is a the number of odds or the string '345' for max odds on 4/10,5/9,6/8 respectively
                                     </pre>
                                     </div>
                                 </div>
