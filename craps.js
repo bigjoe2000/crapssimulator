@@ -71,7 +71,7 @@ class Player {
     getBet(name, subname='') {
         /* returns first betting object matching name and bet_subname.
         If bet_subname="Any", returns first betting object matching name */
-        return this.betsOnTable.find(bet=>bet.name == name && (bet.subname == subname || bet.subname == 'Any'));
+        return this.betsOnTable.find(bet=>bet.name == name && (!subname || bet.subname == subname || bet.subname == 'Any'));
     }
     
     /*  returns the total number of bets in this.betsOnTable that match bets_to_check  */
