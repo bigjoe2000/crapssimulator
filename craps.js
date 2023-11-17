@@ -577,6 +577,7 @@ class Odds extends Bet {
         this.winning_numbers = [number];
         this.losing_numbers = [7];
         this.offOnComeOut = true;
+        this.comeOutRollPush = true;
     
         switch (parseInt(number)) {
             case 4:
