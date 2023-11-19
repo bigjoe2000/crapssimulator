@@ -1,5 +1,6 @@
-<html>
+<html lang="en-US">
     <head>
+        <title>Craps Strategies Simulator</title>
         <script async src="includes.js"></script>
         <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.31.1/ace.js"></script>
@@ -73,7 +74,7 @@
 
         <div>
             <p class="lead text-muted text-center">Select strategies to compare by clicking on them</p>
-            <div class="strategies row row-cols-1 row-cols-md-2 align-items-center justify-content-center gap-2 border-0">
+            <div class="strategies row row-cols-1 row-cols-md-2 align-items-center justify-content-center gap-2 border-0" aria-multiselectable="true">
 
             </div>
         </div>
@@ -99,11 +100,11 @@
                     <input type="number" name="numberOfRuns" id="numberOfRuns" value="2000" class="form-control">
                 </div>
             </div>
-            <div class="row">
+            <div class="row pt-3">
                 <div class="col-12">
+                    <small class="opacity-50 text-nowrap">Select strategies to enable these buttons</small>
                     <button type="button" class="btn btn-info debug-button disabled">Debug</button>
                     <button type="button" class="btn btn-primary simulate-button disabled">Simulate</button>
-                    <small class="opacity-50 text-nowrap">Select strategies to enable these buttons</small>
                 </div>
             </div>
         </div>
@@ -114,11 +115,11 @@
         <div class="printout debug-output border border-info border-opacity-50 m-3 p-3 hidden"></div>
         <div class="chart"></div>
         <div class="templates hidden">
-            <div class="card strategy-item" style="width: 18rem;">
+            <div class="card strategy-item" style="width: 18rem;" aria-selected="false">
                 <div class="card-body" tabindex="0">
                   <h5 class="card-title strategy-name">Card title</h5>
                   <i class="bi bi-info-circle info-button" tabindex="0"></i>
-                  <small class="opacity-50 text-nowrap is-system"></small>
+                  <small class="text-nowrap is-system text-danger"></small>
                   <input class="hidden" type="checkbox">
                   </div>
             </div>
@@ -126,13 +127,12 @@
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                       <div class="modal-header">
-                        <h1 class="modal-title fs-5 strategy-name" >Strategy Name</h1>
+                        <h1 class="modal-title fs-5 strategy-name" aria-label="Name">Strategy Name</h1>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                       </div>
                       <div class="modal-body">
-                        <h6 class="strategy-description"></h6>
-                        <pre class="strategy-content">
-    
+                        <h6 class="strategy-description" aria-label="Description"></h6>
+                        <pre class="strategy-content" aria-label="Javascript Code">
                         </pre>
                       </div>
                       <div class="modal-footer">
@@ -153,9 +153,9 @@
                         <div class="custom-wrapper mb-3">
                             <input type="hidden" name="strategy-id">
                             <input type="hidden" name="strategy-uid">
-                            <div class="p-3"><label class="form-label">Name</label><input name="strategy-name" type="text" class="form-control"></div>
-                            <div class="p-3"><label class="form-label">Description</label><textarea name="strategy-description" class="form-control"></textarea></div>
-                            <div class="p-3"><label class="form-label">Content</label></div>
+                            <div class="p-3"><label class="form-label" for="strategy-name">Name</label><input name="strategy-name" type="text" class="form-control" id="strategy-name"></div>
+                            <div class="p-3"><label class="form-label" for="strategy-description">Description</label><textarea name="strategy-description" class="form-control" id="strategy-description"></textarea></div>
+                            <div class="p-3"><label class="form-label" >Javascript Code</label></div>
                             <div class="py-0 px-3 mb-0 opacity-50"><label>function update(player, table, unit) {</label></div>
                             <div class="custom p-3">
                                 <pre class="editor mt-0">
@@ -234,8 +234,8 @@
         <li>Odds</li>
         <li>LayOdds</li>
         <li>Place</li>
-        <li>Buy</li>
-        <li>Lay</li>
+        <li>Buy - commission is paid up front, so a $26 bet will be $25 placed on number and $1 in commission</li>
+        <li>Lay - commission is paid up front, so a $26 bet will be $25 placed on number and $1 in commission</li>
         <li>Field</li>
         <li>AnyCraps</li>
         <li>AnySeven</li>
@@ -313,7 +313,7 @@
             inputEl.dataset.content = strategy.content;
             inputEl.dataset.name = strategy.name;
 
-            el.querySelector('.info-button').addEventListener('click', e=>{
+            addClickSpace(el.querySelector('.info-button'), e=>{
                 console.log('clicked');
                 e.stopPropagation();
                 let infoEl = infoModalEl.cloneNode(true);
@@ -346,7 +346,14 @@
                     });
 
                     editor.setValue(js_beautify(strategy.content), -1);
-                    setTimeout(()=>editor.focus(), 500);
+                    editor.commands.addCommand({
+                        name: "unblur",
+                        bindKey: {win: "Esc", mac: "Esc"},
+                        exec: editor=>{
+                            editor.blur();
+                        }
+                    })                    
+                    // setTimeout(()=>editor.focus(), 500);
                     editor.on('change', data => {
                         saveButton.classList.add('disabled');
                         saveAsNewButton.classList.add('disabled');
@@ -450,12 +457,13 @@
                 })
 
             });
-            el.addEventListener('click', ()=>{
+            addClickSpace(el, ()=>{
                 inputEl.checked = !inputEl.checked;
                 el.classList.toggle('bg-primary');
                 el.classList.toggle('text-light');
+                el.ariaSelected = inputEl.checked;
                 enableDebugSimulate();
-            })
+            });
         }
 
         function setItUp(isDebug) {
@@ -609,6 +617,11 @@
                 height: 400,
                 interpolateNulls: true
             });
+        }
+
+        function addClickSpace(el, fn) {
+            el.addEventListener('click', fn);
+            el.addEventListener('keyup', e=>event.key === " " && fn(e));
         }
         </script>
     </body>
