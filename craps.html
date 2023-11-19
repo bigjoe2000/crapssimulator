@@ -83,20 +83,20 @@
         <div class="container-md">
             <div class="row">
                 <div class="col">
-                <label class="form-label">Max Rolls</label>
-                <input type="number" name="maxRolls" value="100" class="form-control">
+                <label class="form-label" for="maxRolls">Max Rolls</label>
+                <input type="number" name="maxRolls" id="maxRolls" value="100" class="form-control">
                 </div>
                 <div class="col">
-                    <label class="form-label">Max Shooters</label>
-                    <input type="number" name="maxShooters" value="15" class="form-control">
+                    <label class="form-label" for="maxShooters">Max Shooters</label>
+                    <input type="number" name="maxShooters" id="maxShooters" value="15" class="form-control">
                 </div>
                 <div class="col">
-                    <label class="form-label">Starting Bankroll</label>
-                    <input type="number" name="bankroll" value="1000" class="form-control">
+                    <label class="form-label" for="startingBankroll">Starting Bankroll</label>
+                    <input type="number" name="bankroll" id="startingBankroll" value="1000" class="form-control">
                 </div>
                 <div class="col">
-                    <label class="form-label">Number of Runs</label>
-                    <input type="number" name="numberOfRuns" value="2000" class="form-control">
+                    <label class="form-label" for="numberOfRuns">Number of Runs</label>
+                    <input type="number" name="numberOfRuns" id="numberOfRuns" value="2000" class="form-control">
                 </div>
             </div>
             <div class="row">
@@ -115,9 +115,9 @@
         <div class="chart"></div>
         <div class="templates hidden">
             <div class="card strategy-item" style="width: 18rem;">
-                <div class="card-body">
+                <div class="card-body" tabindex="0">
                   <h5 class="card-title strategy-name">Card title</h5>
-                  <i class="bi bi-info-circle info-button"></i>
+                  <i class="bi bi-info-circle info-button" tabindex="0"></i>
                   <small class="opacity-50 text-nowrap is-system"></small>
                   <input class="hidden" type="checkbox">
                   </div>
