@@ -154,7 +154,7 @@
                             <input type="hidden" name="strategy-id">
                             <input type="hidden" name="strategy-uid">
                             <div class="p-3"><label class="form-label" for="strategy-name">Name</label><input name="strategy-name" type="text" class="form-control" id="strategy-name"></div>
-                            <div class="p-3"><label class="form-label" for="strategy-description">Description</label><textarea name="strategy-description" class="form-control" id="strategy-description"></textarea></div>
+                            <div class="p-3"><label class="form-label" for="strategy-description">Description</label><textarea name="strategy-description" class="form-control" id="strategy-description" oninput='this.style.height = "";this.style.height = this.scrollHeight + "px"'></textarea></div>
                             <div class="p-3"><label class="form-label" >Javascript Code</label></div>
                             <div class="py-0 px-3 mb-0 opacity-50"><label>function update(player, table, unit) {</label></div>
                             <div class="custom p-3">
@@ -409,7 +409,7 @@
                     editEl.querySelector('input[name=strategy-id]').value = strategy.id;
                     editEl.querySelector('input[name=strategy-uid]').value = strategy.uid;
                     editEl.querySelector('input[name=strategy-name]').value = strategy.name;
-                    editEl.querySelector('textarea[name=strategy-description]').innerText = strategy.description;
+                    editEl.querySelector('textarea[name=strategy-description]').value = strategy.description;
                     editEl.querySelector('button.save-button').classList.toggle('hidden', !strategy.uid && !isAdmin);
                     // modal.hide();
                     bootstrap.Modal.getOrCreateInstance(editEl).show();

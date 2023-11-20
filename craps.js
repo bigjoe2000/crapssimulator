@@ -55,7 +55,15 @@ class Player {
     }
 
     createBet(name, amount, number) {
-        this.bet(new bets[name](amount, number));
+        number = parseInt(number);
+        amount = parseInt(amount);
+        let current = this.getBet(name, number);
+        if (!current)
+            this.bet(new bets[name](amount, number));
+        else {
+            this.removeBetByObject(current);
+            this.bet(new bets[name](amount + current.betAmount, number));
+        }
     }
 
     removeBetByObject(bet) {
@@ -79,12 +87,12 @@ class Player {
     }
 
     remove(name, subname='') {
-        let betsToRemove = this.betsOnTable.filter(b=>{b.name == name && (!subname || subname == b.subname)});
+        let betsToRemove = this.betsOnTable.filter(b=>b.name == name && (!subname || subname == b.subname));
         betsToRemove.forEach(b=>this.removeBetByObject(b));
     }
 
     removeBet(name, subname='') {
-        let betsToRemove = this.betsOnTable.filter(b=>{b.name == name && (!subname || subname == b.subname)});
+        let betsToRemove = this.betsOnTable.filter(b=>b.name == name && (!subname || subname == b.subname));
         betsToRemove.forEach(b=>this.removeBetByObject(b));
     }
 
@@ -95,16 +103,19 @@ class Player {
 
     updateBets(table, dice, verbose=false) {
         let info = {};
+        this.strategyInfo.lastRollBets = {won: [], lost: [], pushed: []}
         for (let i = this.betsOnTable.length - 1; i >= 0; i--) {
             let b = this.betsOnTable[i];
             let betStatus, winAmount;
             [betStatus, winAmount] = b.updateBet(table, dice);
         
             if (betStatus == 'win') {
+                b.winAmount = winAmount;
                 this.bankroll += winAmount + b.betAmount - b.commissionAmount;
                 this.totalBetAmount -= b.betAmount;
                 this.betsOnTable.splice(i, 1);
                 this.strategyInfo.currentShooter.betsWon.push(b);
+                this.strategyInfo.lastRollBets.won.push(b);
                 if (verbose) {
                     log(`${this.name} won ${winAmount} on ${b.name}${b.subname} bet!`);
                 }
@@ -112,6 +123,7 @@ class Player {
                 this.totalBetAmount -= b.betAmount;
                 this.betsOnTable.splice(i, 1);
                 this.strategyInfo.currentShooter.betsLost.push(b);
+                this.strategyInfo.lastRollBets.lost.push(b);
                 if (verbose) {
                     log(`${this.name} lost ${b.betAmount} on ${b.name}${b.subname} bet.`);
                 }
@@ -120,6 +132,7 @@ class Player {
                 this.totalBetAmount -= b.betAmount;
                 this.betsOnTable.splice(i, 1);
                 this.strategyInfo.currentShooter.betsPush.push(b);
+                this.strategyInfo.lastRollBets.pushed.push(b);
                 if (verbose) {
                     log(`${this.name} pushed ${b.betAmount} on ${b.name}${b.subname} bet.`);
                 }
@@ -363,7 +376,9 @@ class Table {
 
         if (this.hasPoint() && [7, this.point].includes(dice.total)) {
             this.point = null;
-            this.players.forEach(p=>p.strategyInfo.currentShooter = {betsWon: [], betsLost: [], betsPush: []});
+            if (7 == dice.total) {
+                this.players.forEach(p=>p.strategyInfo.currentShooter = {betsWon: [], betsLost: [], betsPush: []});
+            }
         } else if (!this.hasPoint() && Table.POINTS.includes(dice.total)) {
             this.point = dice.total;
         }
@@ -491,7 +506,7 @@ class Bet {
     // TODO: add whether bet can be removed
 
     constructor(betAmount) {
-        this.betAmount = betAmount;
+        this.betAmount = parseInt(betAmount);
     }
 
     // Use this method to set commission
@@ -636,8 +651,8 @@ class Buy extends Bet {
     constructor(betAmount, number) {
         super(betAmount);
         this.name = 'Buy';
-        this.subname = number;
-        this.winning_numbers = [number];
+        this.subname = parseInt(number);
+        this.winning_numbers = [this.subname];
         this.losing_numbers = [7];
         this.offOnComeOut = true;
     
@@ -664,9 +679,9 @@ class Lay extends Bet {
     constructor(betAmount, number) {
         super(betAmount);
         this.name = 'Lay';
-        this.subname = number;
+        this.subname = parseInt(number);
         this.winning_numbers = [7];
-        this.losing_numbers = [number];
+        this.losing_numbers = [this.subname];
         this.offOnComeOut = true;
     
         if (number == 4 || number == 10) {
@@ -692,10 +707,10 @@ class Place extends Bet {
     constructor(betAmount, number) {
         super(betAmount);
         this.name = "Place";
-        this.subname = "" + number;
+        this.subname = parseInt(number);
         this.offOnComeOut = true;
         this.losing_numbers = [7];
-        this.winning_numbers = [number];
+        this.winning_numbers = [this.subname];
 
         if ([4, 10].includes(number)) {
             this.payoutratio = 9 / 5;
@@ -717,11 +732,11 @@ class Field extends Bet {
         Set of numbers that pay triple on the field bet (default = [])
      */
 
-    constructor(betAmount, double=[2, 12], triple=[]) {
+    constructor(betAmount) {
         super(betAmount);
         this.name = 'Field';
-        this.double_winning_numbers = double;
-        this.triple_winning_numbers = triple;
+        this.double_winning_numbers = [2,12];
+        this.triple_winning_numbers = [];
         this.winning_numbers = [2, 3, 4, 9, 10, 11, 12];
         this.losing_numbers = [5, 6, 7, 8];
     }
@@ -872,6 +887,7 @@ class Horn11 extends Bet {
 
 class Hard extends Bet {
     constructor(betAmount, number) {
+        number = parseInt(number);
         super(betAmount);
         if (number % 2 != 0)
             throw new Error('Bad value for hardway:' + number);
