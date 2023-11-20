@@ -921,7 +921,8 @@ class Hop extends Bet {
         super(betAmount);
         this.name = 'Hop';
         this.subname = twodice;
-        this.winning_results = [this.subname, this.subname.split('').reverse().join('')];
+        twodice = "" + twodice;
+        this.winning_results = [twodice, twodice.split('').reverse().join('')];
         this.payoutratio = (twodice[0] == twodice[1]) ? 30 : 15;
     }
 
