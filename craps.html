@@ -330,6 +330,7 @@
                     let saveButton = editEl.querySelector("button.save-button");
                     let saveAsNewButton = editEl.querySelector("button.save-as-new-button");
                     let debugButton = editEl.querySelector("button.debug-button");
+                    let rollsEl = editEl.querySelector('input[name=fake-rolls]');
                     setTimeout(()=>{
                         var popover = bootstrap.Popover.getOrCreateInstance(saveButton)
                         popover.enable();
@@ -369,7 +370,6 @@
                             s.update = Function("player", "table", "unit", "strategyInfo", editor.getValue());
 
                             let dice = new FakeDice();
-                            let rollsEl = editEl.querySelector('input[name=fake-rolls]');
                             if (rollsEl.value) {
                                 dice.rolls = [];
                                 rollsEl.value.split(' ').forEach(twodice=>{
@@ -410,6 +410,7 @@
                     editEl.querySelector('input[name=strategy-uid]').value = strategy.uid;
                     editEl.querySelector('input[name=strategy-name]').value = strategy.name;
                     editEl.querySelector('textarea[name=strategy-description]').value = strategy.description;
+                    rollsEl.value = strategy.debugRolls || '';
                     editEl.querySelector('button.save-button').classList.toggle('hidden', !strategy.uid && !isAdmin);
                     // modal.hide();
                     bootstrap.Modal.getOrCreateInstance(editEl).show();
@@ -427,7 +428,8 @@
                             uid: uid,
                             name: editEl.querySelector('input[name=strategy-name]').value,
                             description: editEl.querySelector('textarea[name=strategy-description]').value,
-                            content: js_beautify(editor.getValue())
+                            content: js_beautify(editor.getValue()),
+                            debugRolls: rollsEl.value
                         };
                         let url = API + '/save';
                         if (uid == 'prEJbkKQxxRY50xoKXDQ8aV80mu1' && !strategy.uid) {

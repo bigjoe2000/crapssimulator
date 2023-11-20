@@ -81,12 +81,13 @@
         firebase.initializeApp(firebaseConfig);
         fbLoaded = true;
 
-        firebase.auth().onAuthStateChanged(function(user) {
-	        if (user) {
+        firebase.auth().onAuthStateChanged(function(fbUser) {
+	        if (fbUser) {
+                user = fbUser;
                 if (!window.location.pathname.endsWith("craps.html"))
 	        	    window.open('craps.html', '_self');
                 else {
-                    loadedCallbacks.forEach(fn=>fn(user));
+                    loadedCallbacks.forEach(fn=>fn(fbUser));
                 }
 	        } else {
 	            // FirebaseUI config.
@@ -343,14 +344,14 @@
         });
 		modal.open();
     }
-	addLoadedCallback(user=>{
+	addLoadedCallback(fbUser=>{
 		let el = document.querySelector('.logged-in-email');
         if (el)
-		    el.innerText = user.email;
+		    el.innerText = fbUser.email;
 		
 		el = document.querySelector('.logged-in-photo');
-		if (el && user.photoURL) {
-			el.src = user.photoURL;
+		if (el && fbUser.photoURL) {
+			el.src = fbUser.photoURL;
 			el.referrerPolicy = 'no-referrer';
 		}
         el = document.querySelector('.logged-in-logout');
