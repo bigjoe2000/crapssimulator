@@ -323,6 +323,7 @@ class Table {
             // evaluate the stopping condition
             continueRolling =
                 this.numberOfShooters <= maxShooters
+                && (maxRolls == 0 || this.numberOfRolls <= maxRolls)
                 && this.totalPlayerCash > 0
                 && this.players.filter(p=>!p.strategyInfo.stopped).length > 0;
         }
@@ -893,7 +894,7 @@ class Hard extends Bet {
             throw new Error('Bad value for hardway:' + number);
         this.name = 'Hard';
         this.subname = number;
-        this.winning_result = [number, number].join('');
+        this.winning_result = [number/2, number/2].join('');
         this.losing_results = [number, 7];
         this.payoutratio = (number == 4 || number == 10) ? 7 : 9;
         this.offOnComeOut = true;
