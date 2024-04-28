@@ -296,7 +296,6 @@
             // Do user strategies, then in callback fetch system strategies
             makeApiCall({url:API + '/list', callback:resp=>{
                 resp.forEach(addStrategy);
-                makeApiCall({url:API + '/listSystem', callback:resp=>resp.forEach(addStrategy)});
             }})
         }
 
