@@ -323,7 +323,7 @@ class Table {
             // evaluate the stopping condition
             continueRolling =
                 this.numberOfShooters <= maxShooters
-                && (maxRolls == 0 || this.numberOfRolls <= maxRolls)
+                && (maxRolls == 0 || this.dice.numberOfRolls < maxRolls)
                 && this.totalPlayerCash > 0
                 && this.players.filter(p=>!p.strategyInfo.stopped).length > 0;
         }
